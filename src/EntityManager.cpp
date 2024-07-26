@@ -1,5 +1,7 @@
 #include "EntityManager.h"
 
+#include <iostream>
+
 EntityManager::EntityManager()
 {
 
@@ -10,12 +12,12 @@ void EntityManager::update()
     // TODO:    Add entities from m_entitiesToAdd to the proper location(s)
     //          - add them to the vector of all entities
     //          - add them to the vector inside the map, with the tag as a key
-    for (auto e : m_entitiesToAdd)
+    for (auto& e : m_entitiesToAdd)
     {
         m_entities.push_back(e);
     }
 
-    m_entities.clear();
+    m_entitiesToAdd.clear();
 
     // remove dead entities from the vector of all entities
     removeDeadEntities(m_entities);
@@ -27,6 +29,7 @@ void EntityManager::update()
         removeDeadEntities(entityVec);
     }
 }
+
 
 void EntityManager::removeDeadEntities(EntityVec & vec)
 {
@@ -47,9 +50,13 @@ void EntityManager::removeDeadEntities(EntityVec & vec)
 
 std::shared_ptr<Entity> EntityManager::addEntity(const std::string & tag)
 {
+    //std::cout << "addtest1\n";
     auto entity = std::shared_ptr<Entity>(new Entity(m_totalEntities++, tag));
 
     m_entitiesToAdd.push_back(entity);
+
+    //std::cout << "Entity added to m_entitiesToAdd: " << tag << "\n";
+
 
     return entity;
 }
