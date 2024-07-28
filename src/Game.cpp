@@ -37,7 +37,7 @@ void Game::run()
         sMovement();
         sCollision();
         sUserInput();
-        sRender();
+        sRender(); 
 
         m_currentFrame++;
     }
@@ -47,6 +47,15 @@ void Game::run()
 void Game::setPaused(bool paused)
 {
 
+}
+
+Vec2 Game::getPlayerPosition() const
+{
+    if (m_player && m_player->cTransform)
+    {
+        return m_player->cTransform->pos;
+    }
+    return Vec2(0, 0);
 }
 
 void Game::spawnPlayer()
@@ -82,12 +91,34 @@ void Game::spawnEnemy()
     float ex = rand() % m_window.getSize().x;
     float ey = rand() % m_window.getSize().y;
 
-    entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(0.0f, 0.0f), 0.0f);
+    //random colours
+    int r = (1+ rand() % 255);
+    int g = (1+ rand() % 255);
+    int b = (1+ rand() % 255);
 
-    entity->cShape = std::make_shared<CShape>(16.0f, 3, sf::Color(0, 0, 255), sf::Color(255, 255, 255), 4.0f);
+    //random vertices
+    int randVertices = (3 + rand() % 8);
+
+    //random radius
+    float randRadius = static_cast<float>(16+ rand() % 32);
+    
+
+    // Ensure the enemy does not spawn on the player
+    float playerX = m_player->cTransform->pos.x;
+    float playerY = m_player->cTransform->pos.y;
+    float playerRadius = m_player->cShape->circle.getRadius() + 100.0f;
+    while (std::abs(ex - playerX) < playerRadius && std::abs(ey - playerY) < playerRadius)
+    {
+        ex = rand() % m_window.getSize().x;
+        ey = rand() % m_window.getSize().y;
+    }
+
+    entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(0.0f, 0.0f), 0.0f);
+    entity->cShape = std::make_shared<CShape>(randRadius, randVertices, sf::Color(r, g, b), sf::Color(255, 255, 255), 4.0f);
 
     m_lastEnemySpawnTime = m_currentFrame;
 }
+
 
 void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
 {
@@ -128,9 +159,26 @@ void Game::sMovement()
         m_player->cTransform->velocity.y = -5;
     }
 
+    if (m_player->cInput->down)
+    {
+        m_player->cTransform->velocity.y = 5;
+    }
+
+    if (m_player->cInput->left)
+    {
+        m_player->cTransform->velocity.x = -5;
+    }
+
+    if (m_player->cInput->right)
+    {
+        m_player->cTransform->velocity.x = 5;
+    }
+
+
     // Sample
     m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
     m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
+    
 }
 
 void Game::sLifespan()
@@ -167,15 +215,19 @@ void Game::sEnemySpawner()
     // TODO: code which implements enemy spawning should go here
 
     //      (use m_currentFrame - m_LastEnemySpawnTime) to determine how long it has been since the last enemy spawned
-    spawnEnemy();
+    int framesPerSpawn = 120;
+    if (m_currentFrame - m_lastEnemySpawnTime >= framesPerSpawn)
+    {
+        spawnEnemy();
+    }
 }
 
 void Game::sRender()
 {
     m_window.clear();
 
-    //std::cout << m_entities.getEntities().size() << "\n";
-    //std::cout << "working1 ?\n";
+    Vec2 playerPos = getPlayerPosition();
+    std::cout << "Player Position: (" << playerPos.x << ", " << playerPos.y << ")\n";  
 
     for (auto& e : m_entities.getEntities())
     {
@@ -203,16 +255,25 @@ void Game::sUserInput()
         {
             m_running = false;
         }
-
+        // W = Up Movement
         if (event.type == sf::Event::KeyPressed)
         {
             switch (event.key.code)
             {
                 case sf::Keyboard::W:
-                    std::cout << "W Key Pressed\n";
                     m_player->cInput->up = true;
                     break;
-                default: break;
+                case sf::Keyboard::S:
+                    m_player->cInput->down = true;
+                    break;
+                case sf::Keyboard::A:
+                    m_player->cInput->left = true;
+                    break;
+                case sf::Keyboard::D:
+                    m_player->cInput->right = true;
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -221,13 +282,22 @@ void Game::sUserInput()
             switch (event.key.code)
             {
                 case sf::Keyboard::W:
-                    std::cout << "W Key Released\n";
                     m_player->cInput->up = false;
                     break;
-                default: break;
+                case sf::Keyboard::S:
+                    m_player->cInput->down = false;
+                    break;
+                case sf::Keyboard::A:
+                    m_player->cInput->left = false;
+                    break;
+                case sf::Keyboard::D:
+                    m_player->cInput->right = false;
+                    break;
+                default:
+                    break;
             }
         }
-
+        
         if (event.type == sf::Event::MouseButtonPressed)
         {
             if (event.mouseButton.button == sf::Mouse::Left)

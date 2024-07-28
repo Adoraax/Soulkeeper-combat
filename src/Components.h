@@ -18,6 +18,7 @@ class CShape
 {
 public:
     sf::CircleShape circle;
+    float radius    = 0;
 
     CShape(float radius, int points, const sf::Color & fill, const sf::Color & outline, float thickness)
         : circle(radius, points)

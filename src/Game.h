@@ -44,8 +44,8 @@ class Game
     void spawnSpecialWeapon(std::shared_ptr<Entity> entity);
 
 public:
+    Vec2 getPlayerPosition() const;  // get player's position
 
     Game(const std::string & config);       // constructor, takes in game config
-
     void run();
 };
