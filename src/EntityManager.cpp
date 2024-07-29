@@ -1,6 +1,9 @@
 #include "EntityManager.h"
 
 #include <iostream>
+#include <vector>
+#include <memory>
+#include <algorithm>
 
 EntityManager::EntityManager()
 {
@@ -34,18 +37,17 @@ void EntityManager::update()
 void EntityManager::removeDeadEntities(EntityVec & vec)
 {
     // TODO: remove all dead entities from the input vector
-    //       this is called by the update() function
+    //       this is called by the update() function         e->isActive()
 
-    /*
     //use std::Removeif..
-    for (auto e : vec)
-    {
-        if (e->isActive())
-        {
-            remove from vec;
-        }
-    }
-    */
+    auto newEnd = std::remove_if(vec.begin(), vec.end(),
+        [](const std::shared_ptr<Entity>& entity) {
+            return !entity->isActive();
+        });
+
+    // Erase the dead entities from the vector
+    vec.erase(newEnd, vec.end());
+    
 }
 
 std::shared_ptr<Entity> EntityManager::addEntity(const std::string & tag)

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <cmath>
 
 Game::Game(const std::string & config)
 {
@@ -28,11 +29,6 @@ void Game::run()
     while (m_running)
     {
         m_entities.update();
-
-        //if (!m_paused)
-        //{
-        //
-        //}
         sEnemySpawner();
         sMovement();
         sCollision();
@@ -60,29 +56,19 @@ Vec2 Game::getPlayerPosition() const
 
 void Game::spawnPlayer()
 {
-    // TODO:    Finish adding all properties of the player with the correct values from the config
-
-    // We create every entity by calling EntityManager.addEntity(tag)
-    // This returns a std::shared_ptr<Entity>, so we use 'auto' to save typing
     auto entity = m_entities.addEntity("player");
 
     float mx = m_window.getSize().x / 2.0f;
     float my = m_window.getSize().y / 2.0f;
 
-    // Give this entity a Transform so it spawns at (200, 200) with velocity (1,1) and angle 0
     entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f);
-
-    // The entity's shape will have radius 32, 8 sides, dark grey fill, and red outlines of thickness 4
     entity->cShape = std::make_shared<CShape>(32.0f, 8, sf::Color(10, 10, 10), sf::Color(255, 0, 0), 4.0f);
-
-    // Add an input compnent to the player so that we can use inputs
     entity->cInput = std::make_shared<CInput>();
 
-    // Since we watn this Entity to be out player, set out Game's player variable to be this Entity
-    // This goes slightly against the EntityMnager paradigm, but we use the plater so much its worth it
     m_player = entity;
-
 }
+
+
 
 void Game::spawnEnemy()
 {
@@ -106,7 +92,7 @@ void Game::spawnEnemy()
     // Ensure the enemy does not spawn on the player
     float playerX = m_player->cTransform->pos.x;
     float playerY = m_player->cTransform->pos.y;
-    float playerRadius = m_player->cShape->circle.getRadius() + 100.0f;
+    float playerRadius = m_player->cShape->circle.getRadius() + 10.0f;
     while (std::abs(ex - playerX) < playerRadius && std::abs(ey - playerY) < playerRadius)
     {
         ex = rand() % m_window.getSize().x;
@@ -196,19 +182,58 @@ void Game::sLifespan()
 
 void Game::sCollision()
 {
-    // TODO: implement all peroper collisions between entities
-    //      be sure to use the collision radius, NOT the shape radius
-
-    /*
-    for (auto b : m_entities.getEntities("bullet"))
+/*
+   for (auto e : m_entities.getEntities())
     {
-        for (auto e : m_entities.getEntities("enemy"))
+        for (auto enemy : m_entities.getEntities())
         {
-            // if bullet is overlapping enemy, set enemy to !isalive or something
+            //std::cout << m_entities.getEntities().size();
+            //std::cout << "test2";
+            
+            float dx = m_player->cTransform->pos.x - enemy->cTransform->pos.x;
+            float dy = m_player->cTransform->pos.y - enemy->cTransform->pos.y;
+            float distance = std::sqrt(dx * dx + dy * dy);
+
+            if (distance < (m_player->cShape->circle.getRadius() + enemy->cShape->circle.getRadius())) 
+            {
+                //float mx = m_window.getSize().x / 2.0f;
+                //float my = m_window.getSize().y / 2.0f;
+                //m_player->cTransform->pos.x = mx;
+                //m_player->cTransform->pos.y = my;
+                std::cout << "collision";
+            }
         }
     }
-    */
+*/
+    for (auto& enemy : m_entities.getEntities("enemy"))
+    {
+        std::cout << "enemy";
+
+    }
+/*
+    for (auto enemy : m_entities.getEntities("enemy"))
+    {
+        std::cout << "test1";
+        for (auto player : m_entities.getEntities("player"))
+        {
+            std::cout << "test2";
+            float distance = std::sqrt((m_player->cTransform->pos.x - enemy->cTransform->pos.x) * (m_player->cTransform->pos.x - enemy->cTransform->pos.x) +
+                                    (m_player->cTransform->pos.y - enemy->cTransform->pos.y) * (m_player->cTransform->pos.y - enemy->cTransform->pos.y));
+
+            if (distance < (m_player->cShape->circle.getRadius() + enemy->cShape->circle.getRadius())) 
+            {
+                float mx = m_window.getSize().x / 2.0f;
+                float my = m_window.getSize().y / 2.0f;
+                player->cTransform->pos.x = mx;
+                player->cTransform->pos.y = my;
+                std::cout << "collision";
+            }
+        }
+    }
+*/
+
 }
+
 
 void Game::sEnemySpawner()
 {
@@ -220,6 +245,7 @@ void Game::sEnemySpawner()
     {
         spawnEnemy();
     }
+
 }
 
 void Game::sRender()
@@ -227,7 +253,7 @@ void Game::sRender()
     m_window.clear();
 
     Vec2 playerPos = getPlayerPosition();
-    std::cout << "Player Position: (" << playerPos.x << ", " << playerPos.y << ")\n";  
+    //std::cout << "Player Position: (" << playerPos.x << ", " << playerPos.y << ")\n";  
 
     for (auto& e : m_entities.getEntities())
     {
