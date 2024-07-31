@@ -125,6 +125,12 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & target)
 
     bullet->cTransform = std::make_shared<CTransform>(target, Vec2(0, 0), 0);
     bullet->cShape = std::make_shared<CShape>(10, 8,sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
+
+    int lifespan = 60;
+    if (m_currentFrame == lifespan)
+    {
+        bullet->destroy();
+    }
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
@@ -182,56 +188,38 @@ void Game::sLifespan()
 
 void Game::sCollision()
 {
-/*
-   for (auto e : m_entities.getEntities())
+    for (auto& enemy : m_entities.getEntities("enemy"))
     {
-        for (auto enemy : m_entities.getEntities())
+        for (auto& player : m_entities.getEntities("player"))
         {
-            //std::cout << m_entities.getEntities().size();
-            //std::cout << "test2";
-            
             float dx = m_player->cTransform->pos.x - enemy->cTransform->pos.x;
             float dy = m_player->cTransform->pos.y - enemy->cTransform->pos.y;
             float distance = std::sqrt(dx * dx + dy * dy);
-
             if (distance < (m_player->cShape->circle.getRadius() + enemy->cShape->circle.getRadius())) 
             {
-                //float mx = m_window.getSize().x / 2.0f;
-                //float my = m_window.getSize().y / 2.0f;
-                //m_player->cTransform->pos.x = mx;
-                //m_player->cTransform->pos.y = my;
-                std::cout << "collision";
-            }
-        }
-    }
-*/
-    for (auto& enemy : m_entities.getEntities("enemy"))
-    {
-        std::cout << "enemy";
-
-    }
-/*
-    for (auto enemy : m_entities.getEntities("enemy"))
-    {
-        std::cout << "test1";
-        for (auto player : m_entities.getEntities("player"))
-        {
-            std::cout << "test2";
-            float distance = std::sqrt((m_player->cTransform->pos.x - enemy->cTransform->pos.x) * (m_player->cTransform->pos.x - enemy->cTransform->pos.x) +
-                                    (m_player->cTransform->pos.y - enemy->cTransform->pos.y) * (m_player->cTransform->pos.y - enemy->cTransform->pos.y));
-
-            if (distance < (m_player->cShape->circle.getRadius() + enemy->cShape->circle.getRadius())) 
-            {
+                std::cout << "collision\n";
                 float mx = m_window.getSize().x / 2.0f;
                 float my = m_window.getSize().y / 2.0f;
                 player->cTransform->pos.x = mx;
                 player->cTransform->pos.y = my;
-                std::cout << "collision";
             }
         }
     }
-*/
 
+    for (auto& bullet : m_entities.getEntities("bullet"))
+    {
+        for (auto& enemy : m_entities.getEntities("enemy"))
+        {
+            float dx = bullet->cTransform->pos.x - enemy->cTransform->pos.x;
+            float dy = bullet->cTransform->pos.y - enemy->cTransform->pos.y;
+            float distance = std::sqrt(dx * dx + dy * dy);
+            if (distance < (bullet->cShape->circle.getRadius() + enemy->cShape->circle.getRadius())) 
+            {
+                std::cout << "enemy destroyed\n";
+                enemy->destroy();
+            }
+        }
+    }
 }
 
 
