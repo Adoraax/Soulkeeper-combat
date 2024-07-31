@@ -34,6 +34,7 @@ void Game::run()
         sCollision();
         sUserInput();
         sRender(); 
+        sLifespan();
 
         m_currentFrame++;
     }
@@ -124,13 +125,10 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & target)
     auto bullet = m_entities.addEntity("bullet");
 
     bullet->cTransform = std::make_shared<CTransform>(target, Vec2(0, 0), 0);
-    bullet->cShape = std::make_shared<CShape>(10, 8,sf::Color(255, 255, 255), sf::Color(255, 0, 0), 2);
+    bullet->cShape = std::make_shared<CShape>(10, 8, sf::Color(255, 255, 255), sf::Color(0, 0, 0), 2);
+    bullet->cLifespan = std::make_shared<CLifespan>(60);
 
-    int lifespan = 60;
-    if (m_currentFrame == lifespan)
-    {
-        bullet->destroy();
-    }
+    m_bulletSpawnTime = m_currentFrame;
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
@@ -175,16 +173,44 @@ void Game::sMovement()
 
 void Game::sLifespan()
 {
-    // TODO: implement all lifespan functionality
+    for (auto& e : m_entities.getEntities())
+    {
+        if (e && e->cLifespan && e->cShape)
+        {
+            // Calculate total lifespan duration
+            float totalLifespan = e->cLifespan->total;
+            float remainingLifespan = e->cLifespan->remaining;
 
-    // for all entities
-    //  if entity has no lifespan component, skip it
-    //  if entity has > 0 remaining lifespan, subtract 1
-    //  if it has lifespan and is alive
-    //      scale its alpha channel properly
-    //  if it has lifespan and its time is up
-    //      destriy the entity
+            // Calculate the color decrement per frame
+            if (totalLifespan > 0)
+            {
+                // Determine the decrement per frame
+                float fadeDecrementPerFrame = 255.0f / totalLifespan;
+
+                sf::Color fillColor = e->cShape->circle.getFillColor();
+                float newR = std::max(0.0f, fillColor.r - fadeDecrementPerFrame);
+                float newG = std::max(0.0f, fillColor.g - fadeDecrementPerFrame);
+                float newB = std::max(0.0f, fillColor.b - fadeDecrementPerFrame);
+
+                e->cShape->circle.setFillColor(sf::Color(static_cast<sf::Uint8>(newR),
+                                                         static_cast<sf::Uint8>(newG),
+                                                         static_cast<sf::Uint8>(newB)));
+
+                if (e->isActive())
+                {
+                    e->cLifespan->remaining--;
+
+                    // Destroy the entity when lifespan ends
+                    if (e->cLifespan->remaining == 0)
+                    {
+                        e->destroy();
+                    }
+                }
+            }
+        }
+    }
 }
+
 
 void Game::sCollision()
 {
