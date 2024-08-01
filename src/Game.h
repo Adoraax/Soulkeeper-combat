@@ -23,6 +23,8 @@ class Game
     int                 m_currentFrame = 0;
     int                 m_lastEnemySpawnTime = 0;
     int                 m_bulletSpawnTime = 0;
+    int                 m_enemySpeed = 0;
+    Vec2                m_target = { 0, 0 };
     bool                m_puased = false;   // whether we update game logic
     bool                m_running = true;   // whether the game is running
 
@@ -43,6 +45,8 @@ class Game
     void spawnSmallEnemies(std::shared_ptr<Entity> entity);
     void spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
     void spawnSpecialWeapon(std::shared_ptr<Entity> entity);
+
+    void chasePlayer();
 
 public:
     Vec2 getPlayerPosition() const;  // get player's position

@@ -1,5 +1,6 @@
 #include "Vec2.h"
 #include <math.h>
+#include <cmath>
 
 Vec2::Vec2()
 {
@@ -69,4 +70,14 @@ void Vec2::operator /= (const float val)
 float Vec2::dist(const Vec2& rhs) const
 {
     return sqrt(((x - rhs.x)*(x - rhs.x))+((y - rhs.y)*(y - rhs.y)));
+}
+
+Vec2 Vec2::normalize() const
+{
+    float magnitude = sqrt(x * x + y * y);
+    if (magnitude > 0)
+    {
+        return Vec2(x / magnitude, y / magnitude);
+    }
+    return Vec2(0, 0); // Return a zero vector if the magnitude is zero
 }

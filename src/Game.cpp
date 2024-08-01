@@ -15,7 +15,7 @@ void Game::init(const std::string & path)
 
     //fin >> m_playerConfig.SR >> m_playerConfig.CR;
 
-    m_window.create(sf::VideoMode(1280, 720), "Assignment 2");
+    m_window.create(sf::VideoMode(3640, 1080), "Assignment 2");
     m_window.setFramerateLimit(60);
 
     spawnPlayer();
@@ -35,6 +35,7 @@ void Game::run()
         sUserInput();
         sRender(); 
         sLifespan();
+        chasePlayer();
 
         m_currentFrame++;
     }
@@ -93,14 +94,18 @@ void Game::spawnEnemy()
     // Ensure the enemy does not spawn on the player
     float playerX = m_player->cTransform->pos.x;
     float playerY = m_player->cTransform->pos.y;
-    float playerRadius = m_player->cShape->circle.getRadius() + 10.0f;
+    float playerRadius = m_player->cShape->circle.getRadius() + 60.0f;
+    Vec2 enemyPosition(ex, ey);
+    m_enemySpeed = 2.0f;
     while (std::abs(ex - playerX) < playerRadius && std::abs(ey - playerY) < playerRadius)
     {
         ex = rand() % m_window.getSize().x;
         ey = rand() % m_window.getSize().y;
+        enemyPosition = Vec2(ex, ey);
     }
 
-    entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(0.0f, 0.0f), 0.0f);
+    Vec2 direction = (m_player->cTransform->pos - enemyPosition).normalize();
+    entity->cTransform = std::make_shared<CTransform>(enemyPosition, direction * m_enemySpeed, 0.0f);
     entity->cShape = std::make_shared<CShape>(randRadius, randVertices, sf::Color(r, g, b), sf::Color(255, 255, 255), 4.0f);
 
     m_lastEnemySpawnTime = m_currentFrame;
@@ -124,7 +129,11 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & target)
     //       - you must set the velocity by using fomula in notes
     auto bullet = m_entities.addEntity("bullet");
 
-    bullet->cTransform = std::make_shared<CTransform>(target, Vec2(0, 0), 0);
+    float bulletSpeed = 12.0f;
+
+    Vec2 direction = (m_target - m_player->cTransform->pos).normalize();
+
+    bullet->cTransform = std::make_shared<CTransform>(m_player->cTransform->pos, direction * bulletSpeed, 0);
     bullet->cShape = std::make_shared<CShape>(10, 8, sf::Color(255, 255, 255), sf::Color(0, 0, 0), 2);
     bullet->cLifespan = std::make_shared<CLifespan>(60);
 
@@ -168,6 +177,16 @@ void Game::sMovement()
     // Sample
     m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
     m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
+
+    //m_player->cTransform->pos += m_player->cTransform->velocity;
+
+    for (auto& bullet : m_entities.getEntities("bullet"))
+    {
+        if (bullet->cTransform)
+        {
+            bullet->cTransform->pos += bullet->cTransform->velocity;
+        }
+    }
     
 }
 
@@ -228,6 +247,7 @@ void Game::sCollision()
                 float my = m_window.getSize().y / 2.0f;
                 player->cTransform->pos.x = mx;
                 player->cTransform->pos.y = my;
+                enemy->destroy();
             }
         }
     }
@@ -243,6 +263,7 @@ void Game::sCollision()
             {
                 std::cout << "enemy destroyed\n";
                 enemy->destroy();
+                bullet->destroy();
             }
         }
     }
@@ -254,12 +275,31 @@ void Game::sEnemySpawner()
     // TODO: code which implements enemy spawning should go here
 
     //      (use m_currentFrame - m_LastEnemySpawnTime) to determine how long it has been since the last enemy spawned
-    int framesPerSpawn = 120;
+    int framesPerSpawn = 20;
     if (m_currentFrame - m_lastEnemySpawnTime >= framesPerSpawn)
     {
         spawnEnemy();
     }
 
+}
+
+void Game::chasePlayer()
+{
+    Vec2 newDirection;
+
+    for (auto& enemy : m_entities.getEntities("enemy"))
+    {
+        newDirection = (m_player->cTransform->pos - enemy->cTransform->pos).normalize();
+        enemy->cTransform->velocity = newDirection * m_enemySpeed;
+    }
+
+    for (auto& enemy : m_entities.getEntities("enemy"))
+    {
+        if (enemy->cTransform)
+        {
+            enemy->cTransform->pos += enemy->cTransform->velocity;
+        }
+    }
 }
 
 void Game::sRender()
@@ -344,7 +384,10 @@ void Game::sUserInput()
             {
                 std::cout << "Left Mouse Buttton Clicked at (" << event.mouseButton.x << "," << event.mouseButton.y << ")\n";
                 // call spawnBullet here
-                spawnBullet(m_player, Vec2(event.mouseButton.x, event.mouseButton.y));
+                //spawnBullet(m_player, Vec2(event.mouseButton.x, event.mouseButton.y));
+                m_target = Vec2(event.mouseButton.x, event.mouseButton.y);
+                //spawnBullet(m_player, Vec2(m_player->cTransform->pos));
+                spawnBullet(m_player, m_target);
             }
 
             if (event.mouseButton.button == sf::Mouse::Right)
