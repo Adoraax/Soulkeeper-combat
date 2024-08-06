@@ -63,13 +63,12 @@ void Game::spawnPlayer()
     float mx = m_window.getSize().x / 2.0f;
     float my = m_window.getSize().y / 2.0f;
 
-    entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f);
+    entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f, 1.0f);
     entity->cShape = std::make_shared<CShape>(32.0f, 8, sf::Color(10, 10, 10), sf::Color(255, 0, 0), 4.0f);
     entity->cInput = std::make_shared<CInput>();
 
     m_player = entity;
 }
-
 
 
 void Game::spawnEnemy()
@@ -79,24 +78,20 @@ void Game::spawnEnemy()
     float ex = rand() % m_window.getSize().x;
     float ey = rand() % m_window.getSize().y;
 
-    //random colours
-    int r = (1+ rand() % 255);
-    int g = (1+ rand() % 255);
-    int b = (1+ rand() % 255);
+    int r = (1 + rand() % 255);
+    int g = (1 + rand() % 255);
+    int b = (1 + rand() % 255);
 
-    //random vertices
     int randVertices = (3 + rand() % 8);
 
-    //random radius
-    float randRadius = static_cast<float>(16+ rand() % 32);
-    
+    float randRadius = static_cast<float>(16 + rand() % 45);
 
     // Ensure the enemy does not spawn on the player
     float playerX = m_player->cTransform->pos.x;
     float playerY = m_player->cTransform->pos.y;
     float playerRadius = m_player->cShape->circle.getRadius() + 60.0f;
     Vec2 enemyPosition(ex, ey);
-    m_enemySpeed = 2.0f;
+    float enemySpeed = (100.0f / randRadius)/1.5; // Calculate speed based on radius
     while (std::abs(ex - playerX) < playerRadius && std::abs(ey - playerY) < playerRadius)
     {
         ex = rand() % m_window.getSize().x;
@@ -105,11 +100,13 @@ void Game::spawnEnemy()
     }
 
     Vec2 direction = (m_player->cTransform->pos - enemyPosition).normalize();
-    entity->cTransform = std::make_shared<CTransform>(enemyPosition, direction * m_enemySpeed, 0.0f);
+    entity->cTransform = std::make_shared<CTransform>(enemyPosition, direction * enemySpeed, 0.0f, enemySpeed);
     entity->cShape = std::make_shared<CShape>(randRadius, randVertices, sf::Color(r, g, b), sf::Color(255, 255, 255), 4.0f);
 
     m_lastEnemySpawnTime = m_currentFrame;
 }
+
+
 
 
 void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
@@ -124,16 +121,13 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
 
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & target)
 {
-    // TODO: implement the spawning of bullets which travels towards target
-    //       - bullet speed is given as a scalar speed
-    //       - you must set the velocity by using fomula in notes
     auto bullet = m_entities.addEntity("bullet");
 
     float bulletSpeed = 12.0f;
 
     Vec2 direction = (m_target - m_player->cTransform->pos).normalize();
 
-    bullet->cTransform = std::make_shared<CTransform>(m_player->cTransform->pos, direction * bulletSpeed, 0);
+    bullet->cTransform = std::make_shared<CTransform>(m_player->cTransform->pos, direction * bulletSpeed, 0.0f, 1.0f);
     bullet->cShape = std::make_shared<CShape>(10, 8, sf::Color(255, 255, 255), sf::Color(0, 0, 0), 2);
     bullet->cLifespan = std::make_shared<CLifespan>(60);
 
@@ -290,7 +284,8 @@ void Game::chasePlayer()
     for (auto& enemy : m_entities.getEntities("enemy"))
     {
         newDirection = (m_player->cTransform->pos - enemy->cTransform->pos).normalize();
-        enemy->cTransform->velocity = newDirection * m_enemySpeed;
+        //enemy->cTransform->velocity = newDirection * m_enemySpeed;
+        enemy->cTransform->velocity = newDirection * enemy->cTransform->speed;
     }
 
     for (auto& enemy : m_entities.getEntities("enemy"))
