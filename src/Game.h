@@ -16,17 +16,35 @@ class Game
     EntityManager       m_entities;         // vector of entities to maintain
     sf::Font            m_font;             // the font we will use to draw
     sf::Text            m_text;             // the score text to be drawn to the screen
+    sf::Clock           m_clock;
+    sf::Clock           m_mouseClock;
     PlayerConfig        m_playerConfig;
     EnemyConfig         m_enemyConfig;
     BulletConfig        m_bulletConfig;
+    Vec2                m_target = { 0, 0 };
     int                 m_score = 0;
     int                 m_currentFrame = 0;
     int                 m_lastEnemySpawnTime = 0;
     int                 m_bulletSpawnTime = 0;
     int                 m_enemySpeed = 0;
-    Vec2                m_target = { 0, 0 };
-    bool                m_puased = false;   // whether we update game logic
+    bool                m_isMousePressed = false;
+    bool                m_isChasing = true;
+    bool                m_paused = false;   // whether we update game logic
     bool                m_running = true;   // whether the game is running
+    bool                m_isSlowMotionApplied = false;
+    float               m_deltatime;
+    float               m_bulletSpeed = 17.0f;
+    float               m_timeScale = 1.0f;
+    float               m_decayRate = 2.0f;
+    float               groundLimit;
+    float               GRAVITY = 20.0f;    
+    float               AIR_RESISTANCE = 0.995f;             // Air resistance factor
+    float               timeAdjustedDelta;
+    const float         BOUNCE_FACTOR = 0.4f;        // Energy loss during bounce
+    const float         VELOCITY_THRESHOLD = 6.0f;  // Minimum velocity to stop bouncing
+    const float         GROUND_FRICTION = 0.95f;            // Friction factor
+    const float         GROUND_LEVEL = 1080.0f;             // Ground level
+
 
     std::shared_ptr<Entity> m_player;
 
@@ -39,12 +57,18 @@ class Game
     void sRender();
     void sEnemySpawner();
     void sCollision();
+    void sBoundarySpawner();
+    void sApplyGravity();
 
     void spawnPlayer();
     void spawnEnemy();
     void spawnSmallEnemies(std::shared_ptr<Entity> entity);
     void spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
+    void spawnArrow(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
     void spawnSpecialWeapon(std::shared_ptr<Entity> entity);
+    void spawnBoundary();
+    
+    void slowMotion();
 
     void chasePlayer();
 

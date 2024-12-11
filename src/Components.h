@@ -8,6 +8,7 @@ class CTransform
 public:
     Vec2 pos;
     Vec2 velocity;
+    //Vec2 velocityOriginal;
     float angle;
     float speed;
 
@@ -19,8 +20,11 @@ class CShape
 {
 public:
     sf::CircleShape circle;
+    sf::RectangleShape rectangle;
     float radius    = 0;
+    bool isCircle = true;
 
+    //circle
     CShape(float radius, int points, const sf::Color & fill, const sf::Color & outline, float thickness)
         : circle(radius, points)
     {
@@ -28,6 +32,16 @@ public:
         circle.setOutlineColor(outline);
         circle.setOutlineThickness(thickness);
         circle.setOrigin(radius, radius);
+    }
+
+    //rectangle
+    CShape(const sf::Vector2f &size, const sf::Color &fill, const sf::Color &outline, float thickness) 
+        : rectangle(size)
+    {
+        rectangle.setFillColor(fill);
+        rectangle.setOutlineColor(outline);
+        rectangle.setOutlineThickness(thickness);
+        rectangle.setOrigin(size.x / 2, size.y / 2);
     }
 };
 
