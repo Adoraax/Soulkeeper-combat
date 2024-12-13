@@ -17,6 +17,7 @@ void Game::init(const std::string & path)
 
     m_window.create(sf::VideoMode(3640, 1080), "Assignment 2");
     m_window.setFramerateLimit(60);
+    GROUND_LEVEL = m_window.getSize().y - 2.0f;
 
     spawnPlayer();
 }
@@ -70,7 +71,7 @@ void Game::spawnPlayer()
 
     entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f, 1.0f);
     //entity->cShape = std::make_shared<CShape>(32.0f, 8, sf::Color(10, 10, 10), sf::Color(255, 0, 0), 4.0f); // circle shape
-    entity->cShape = std::make_shared<CShape>(sf::Vector2f(90.0f, 180.0f), sf::Color(0, 0, 0), sf::Color(255, 0, 0), 4.0f); // rectangle shape
+    entity->cShape = std::make_shared<CShape>(sf::Vector2f(90.0f, 180.0f), sf::Color(0, 0, 0), sf::Color(255, 0, 0), 2.0f); // rectangle shape
 
     entity->cInput = std::make_shared<CInput>();
 
@@ -552,54 +553,112 @@ void Game::sApplyGravity()
         if (e->cTransform && e->cShape)
         {
             // Apply gravity to Y velocity
-            e->cTransform->velocity.y += GRAVITY * m_deltatime;
+            if (e->tag() == "player")
+            {
+                e->cTransform->velocity.y += GRAVITY * m_deltatime * 1.75f;
+            }
+            else if (e->tag() == "enemy")
+            {
+                e->cTransform->velocity.y += GRAVITY * m_deltatime;
+            }
+            else if (e->tag() == "bullet")
+            {
+                e->cTransform->velocity.y += GRAVITY * m_deltatime;
+            }
+            else if (e->tag() == "arrow")
+            {
+                e->cTransform->velocity.y += GRAVITY * m_deltatime;
+            }
 
             // Update position based on velocity
             e->cTransform->pos += e->cTransform->velocity * m_deltatime;
 
+            // Handle Y-axis deceleration
+            // if (e->cTransform->pos.y < groundLimit)
+            // {
+            //     if (e->tag() == "player")
+            //     {
+            //         e->cTransform->velocity.y /= AIR_RESISTANCE;
+            //     }
+            //     else if (e->tag() == "enemy")
+            //     {
+            //         e->cTransform->velocity.y /= AIR_RESISTANCE; // Air resistance
+            //     }
+            //     else if (e->tag() == "bullet")
+            //     {
+            //         e->cTransform->velocity.y /= AIR_RESISTANCE; // Air resistance
+            //     }
+            //     else if (e->tag() == "arrow")
+            //     {
+            //         e->cTransform->velocity.y /= AIR_RESISTANCE; // Air resistance
+            //     }
+            // }
+
+
             // Handle X-axis deceleration
+            // sf::Vector2f dragForce(e->cTransform->velocity.x * (-dragCoefficient * m_bulletSpeed), e->cTransform->velocity.y * (-dragCoefficient * m_bulletSpeed));
             if (std::abs(e->cTransform->velocity.x) > 1.0f)
             {
-                if (e->cTransform->pos.y < GROUND_LEVEL)
+                if (e->cTransform->pos.y < groundLimit)
                 {
-                    e->cTransform->velocity.x *= AIR_RESISTANCE; // Air resistance
+                    if (e->tag() == "player")
+                    {
+                        e->cTransform->velocity.x *= AIR_RESISTANCE;
+                    }
+                    else if (e->tag() == "enemy")
+                    {
+                        e->cTransform->velocity.x *= AIR_RESISTANCE; // Air resistance
+                    }
+                    else if (e->tag() == "bullet")
+                    {
+                        e->cTransform->velocity.x *= AIR_RESISTANCE; // Air resistance
+                    }
+                    else if (e->tag() == "arrow")
+                    {
+                        e->cTransform->velocity.x *= AIR_RESISTANCE; // Air resistance
+                    }
                 }
                 else
                 {
-                    e->cTransform->velocity.x *= GROUND_FRICTION; // Ground friction
+                    if (e->tag() == "player")
+                    {
+                        e->cTransform->velocity.x *= GROUND_FRICTION;
+                    }
+                    else if (e->tag() == "enemy")
+                    {
+                        e->cTransform->velocity.x *= GROUND_FRICTION; // Ground friction
+                    }
+                    else if (e->tag() == "bullet")
+                    {
+                        e->cTransform->velocity.x *= GROUND_FRICTION; // Ground friction
+                    }
+                    else if (e->tag() == "arrow")
+                    {
+                        e->cTransform->velocity.x *= GROUND_FRICTION; // Ground friction
+                    }
                 }
             }
             else
             {
-                e->cTransform->velocity.x = 0.0f; // Stop X motion if below threshold
+                if (e->tag() == "player")
+                {
+                    e->cTransform->velocity.x = 0.0f; // Stop X motion if below threshold
+                }
+                else if (e->tag() == "enemy")
+                {
+                    e->cTransform->velocity.x = 0.0f; // Stop X motion if below threshold
+                }
+                else if (e->tag() == "bullet")
+                {
+                    e->cTransform->velocity.x = 0.0f; // Stop X motion if below threshold
+                }
+                else if (e->tag() == "arrow")
+                {
+                    e->cTransform->velocity.x = 0.0f; // Stop X motion if below threshold
+                }
             }
 
-            // for (auto& e : m_entities.getEntities("arrow"))
-            // {
-            // std::cout << "Arrow Velocity: " << e->cTransform->velocity.y << "\n";
-            // }
-
-            // Handle Y-axis deceleration
-            // if (std::abs(e->cTransform->velocity.y) > 0.0f)
-            // {
-            //     e->cTransform->velocity.y *= AIR_RESISTANCE; // Air resistance
-            // }
-            // else if (std::abs(e->cTransform->velocity.y) < 0.0f)
-            // {
-            //     e->cTransform->velocity.y *= -AIR_RESISTANCE;
-            // }
-
-
-            // Determine ground limit based on shape
             groundLimit = GROUND_LEVEL;
-            // if (e->cShape->isCircle)
-            // {
-            //     groundLimit -= e->cShape->circle.getRadius();
-            // }
-            // else
-            // {
-            //     groundLimit -= e->cShape->rectangle.getSize().y / 2.0f; // Center-aligned
-            // }
             if (e->tag() == "player")
             {
                 groundLimit -= e->cShape->rectangle.getSize().y / 2.0f;
@@ -626,39 +685,78 @@ void Game::sApplyGravity()
                 // Bounce or stop based on velocity
                 if (std::abs(e->cTransform->velocity.y) >= VELOCITY_THRESHOLD)
                 {
-                    e->cTransform->velocity.y = -e->cTransform->velocity.y * BOUNCE_FACTOR;
+                    if (e->tag() == "player")
+                    {
+                        e->cTransform->velocity.y = 0.0f;
+                    }
+                    else if (e->tag() == "enemy")
+                    {
+                        e->cTransform->velocity.y = -e->cTransform->velocity.y * BOUNCE_FACTOR;
+                    }
+                    else if (e->tag() == "bullet")
+                    {
+                        e->cTransform->velocity.y = -e->cTransform->velocity.y * BOUNCE_FACTOR;
+                    }
+                    else if (e->tag() == "arrow")
+                    {
+                        e->cTransform->velocity.y = -e->cTransform->velocity.y * BOUNCE_FACTOR;
+                    }
                 }
                 else
                 {
-                    e->cTransform->velocity.y = 0.0f; // Stop Y motion
+                    if (e->tag() == "player")
+                    {
+                        e->cTransform->velocity.y = 0.0f; // Stop Y motion
+                    }
+                    else if (e->tag() == "enemy")
+                    {
+                        e->cTransform->velocity.y = 0.0f; // Stop Y motion
+                    }
+                    else if (e->tag() == "bullet")
+                    {
+                        e->cTransform->velocity.y = 0.0f; // Stop Y motion
+                    }
+                    else if (e->tag() == "arrow")
+                    {
+                        e->cTransform->velocity.y = 0.0f; // Stop Y motion
+                    }
                 }
-
-                // Apply ground friction to X velocity
-                //e->cTransform->velocity.x *= GROUND_FRICTION;
 
                 // Additional slowing logic for low velocities
                 if (std::abs(e->cTransform->velocity.x) < 12.0f && std::abs(e->cTransform->velocity.x) > 1.0f)
                 {
-                    e->cTransform->velocity.x *= (GROUND_FRICTION * 0.8f);
+                    if (e->tag() == "player")
+                    {
+                        e->cTransform->velocity.x *= (GROUND_FRICTION * 0.8f);
+                    }
+                    else if (e->tag() == "enemy")
+                    {
+                        e->cTransform->velocity.x *= (GROUND_FRICTION * 0.8f);
+                    }
+                    else if (e->tag() == "bullet")
+                    {
+                        e->cTransform->velocity.x *= (GROUND_FRICTION * 0.8f);
+                    }
+                    else if (e->tag() == "arrow")
+                    {
+                        e->cTransform->velocity.x *= (GROUND_FRICTION * 0.8f);
+                    }
                 }
             }
 
             // Additional logic for arrows
             if (e->tag() == "arrow")
             {
-                // Calculate the angle of the velocity vector
+                // angle of velocity vector
                 float angleRad = std::atan2(e->cTransform->velocity.y, e->cTransform->velocity.x);
                 float angleDeg = angleRad * 180.0f / M_PI;
 
-
-                // Set the arrow's rotation to the calculated angle
+                // arrows rotation to the calculated angle
                 e->cShape->rectangle.setRotation(angleDeg);
                 if (e->cTransform->pos.y < groundLimit)
                 {
                     std::cout << "Arrow angle: " << angleDeg << "\n";
                 }
-                
-                //std::cout << "Arrow velocity: " << e->cTransform->velocity << "\n";
             }
             
 
@@ -667,77 +765,46 @@ void Game::sApplyGravity()
 }
 
 
-// sRender -- original implementation
-// void Game::sRender()
-// {
-//     m_window.clear();
-
-//     Vec2 playerPos = getPlayerPosition();
-
-//     for (auto& e : m_entities.getEntities())
-//     {
-//         e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
-//         e->cShape->rectangle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
-    
-//         //e->cTransform->angle += 1.0f;
-//         //e->cShape->circle.setRotation(e->cTransform->angle);
-
-//         m_window.draw(e->cShape->circle);
-//         m_window.draw(e->cShape->rectangle);
-//     }
-
-//     m_window.display();
-// }
-
-
 // sRender -- safer implementation
 void Game::sRender()
 {
-    //std::cout << "sRender" << "\n";
-    //std::cout << "1" << " \n";
     m_window.clear();
-    //std::cout << "2" << " \n";
 
     for (auto& e : m_entities.getEntities())
     {
-        //std::cout << e->tag() << "\n";
-        //std::cout << "3" << " \n";
         // Ensure the entity has the required components before rendering
         if (e->cShape && e->cTransform)
         {
-            //std::cout << "4" << " \n";
             // Update positions of shapes based on the transform
             e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
             e->cShape->rectangle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
-            //std::cout << "5" << " \n";
 
             // Render shapes only if they are valid
-            if (e->cShape->circle.getRadius() > 0) // Check if the circle has a valid radius
+            if (e->cShape->circle.getRadius() > 0)
             {
-                //std::cout << "6" << " \n";
                 m_window.draw(e->cShape->circle);
             }
-            if (e->cShape->rectangle.getSize().x > 0 && e->cShape->rectangle.getSize().y > 0) // Check if rectangle dimensions are valid
+            if (e->cShape->rectangle.getSize().x > 0 && e->cShape->rectangle.getSize().y > 0)
             {
                 m_window.draw(e->cShape->rectangle);
-                //std::cout << "7" << " \n";
             }
         }
     }
-
     m_window.display();
-    //std::cout << "8" << " \n";
 }
 
 
 void Game::sMovement()
 {
-    //std::cout << "sMovement" << "\n";
     // player movement
     //m_player->cTransform->velocity = { 0 , 0 };
-    if (m_player->cInput->up)
+    if (m_player->cInput->up && !m_isJumping)
     {
-        m_player->cTransform->velocity.y = -5;
+        if (m_player->cTransform->pos.y >= GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f)
+        {
+            m_player->cTransform->velocity.y = -15;
+            m_isJumping = true;
+        }
     }
 
     if (m_player->cInput->down)
@@ -747,12 +814,26 @@ void Game::sMovement()
 
     if (m_player->cInput->left)
     {
-        m_player->cTransform->velocity.x = -5;
+        m_player->cTransform->velocity.x = -6;
     }
 
     if (m_player->cInput->right)
     {
-        m_player->cTransform->velocity.x = 5;
+        m_player->cTransform->velocity.x = 6;
+    }
+
+    // Dashing
+    if (m_isDashingRight && m_player->cTransform->pos.y >= GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f)
+    {
+        m_player->cTransform->velocity.y = -5; // Optional upward movement during dash
+        m_player->cTransform->velocity.x = 50; // Dash speed to the right
+        m_isDashingRight = false; // Reset dash state
+    }
+    if (m_isDashingLeft && m_player->cTransform->pos.y >= GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f)
+    {
+        m_player->cTransform->velocity.y = -5; // Optional upward movement during dash
+        m_player->cTransform->velocity.x = -50; // Dash speed to the left
+        m_isDashingLeft = false; // Reset dash state
     }
 
     m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
@@ -775,18 +856,6 @@ void Game::sMovement()
             arrow->cTransform->pos += arrow->cTransform->velocity;
         }
     }
-
-    // slomo movement timescaling -- causes segmentation fault (make: *** [Makefile:62: run] Error -1073741819) and std::bad_alloc when arrows fired while player is moving
-    // float timeAdjustedDelta = m_deltatime * m_timeScale;
-    // for (auto& entity : m_entities.getEntities())
-    // {
-    //     if (entity->tag() != "player" && entity->cTransform)
-    //     {
-    //         // Adjust position based on velocity and time scale (slow motion or normal)
-    //         entity->cTransform->pos += entity->cTransform->velocity * timeAdjustedDelta;
-    //     }
-    // }
-    
 }
 
 // Handle user input
@@ -799,12 +868,44 @@ void Game::sUserInput()
         {
             m_running = false;
         }
+
         if (event.type == sf::Event::KeyPressed)
         {
-            switch (event.key.code)
+            sf::Keyboard::Key key = event.key.code;
+
+            if (!m_keyHeld[key])
+            {
+                auto now = m_keyPressClocks[key].getElapsedTime().asSeconds();
+                if (key == sf::Keyboard::D && now < DOUBLE_TAP_THRESHOLD)
+                {
+                    if (!m_isDashingRight)
+                    {
+                        m_isDashingRight = true;
+                        std::cout << "dashing right\n";
+                    }
+                }
+                else if (key == sf::Keyboard::A && now < DOUBLE_TAP_THRESHOLD)
+                {
+                    if (!m_isDashingLeft)
+                    {
+                        m_isDashingLeft = true;
+                        std::cout << "dashing left\n";
+                    }
+                }
+
+                // Reset the clock for single-tap
+                m_keyPressClocks[key].restart();
+            }
+
+            // Mark key as held
+            m_keyHeld[key] = true;
+
+            // Handle movement keys
+            switch (key)
             {
                 case sf::Keyboard::W:
                     m_player->cInput->up = true;
+                    m_isJumping = false;
                     break;
                 case sf::Keyboard::S:
                     m_player->cInput->down = true;
@@ -822,7 +923,13 @@ void Game::sUserInput()
 
         if (event.type == sf::Event::KeyReleased)
         {
-            switch (event.key.code)
+            sf::Keyboard::Key key = event.key.code;
+
+            // Mark key as released
+            m_keyHeld[key] = false;
+
+            // Handle movement key release
+            switch (key)
             {
                 case sf::Keyboard::W:
                     m_player->cInput->up = false;
@@ -848,7 +955,7 @@ void Game::sUserInput()
             {
                 m_mouseClock.restart();
                 m_isMousePressed = true;
-                m_target = Vec2(event.mouseButton.x, event.mouseButton.y);
+                
                 std::cout << "Left Mouse Button Pressed\n";
             }
         }
@@ -857,6 +964,7 @@ void Game::sUserInput()
         {
             if (event.mouseButton.button == sf::Mouse::Left && m_isMousePressed)
             {
+                m_target = Vec2(event.mouseButton.x, event.mouseButton.y);
                 sf::Time elapsed = m_mouseClock.getElapsedTime();
                 m_isMousePressed = false;
 
