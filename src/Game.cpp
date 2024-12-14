@@ -796,50 +796,74 @@ void Game::sRender()
 
 void Game::sMovement()
 {
-    // player movement
-    //m_player->cTransform->velocity = { 0 , 0 };
-    if (m_player->cInput->up && !m_isJumping)
+    float dt = m_clock.restart().asSeconds();
+
+    // Handle dashing logic
+    if (m_isDashingRight || m_isDashingLeft)
     {
-        if (m_player->cTransform->pos.y >= GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f)
+        float elapsed = m_dashClock.getElapsedTime().asSeconds();
+
+        if (elapsed < DASH_DURATION)
         {
-            m_player->cTransform->velocity.y = -15;
-            m_isJumping = true;
+            // Calculate dash velocity using deltatime
+            float dashSpeed = (m_isDashingRight ? DASH_DISTANCE : -DASH_DISTANCE) / DASH_DURATION;
+            m_player->cTransform->velocity.x = dashSpeed;
+            m_player->cTransform->velocity.y = 2;
+            m_player->cShape->rectangle.setSize(sf::Vector2f(90.0f, 90.0f));
+            if (m_player->cTransform->pos.y < GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 5.0f)
+            {
+                m_player->cTransform->pos.y = GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 5.0f;
+            }
+            else {
+                m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
+            }
+
+        }
+        else
+        {
+            // End dash
+            m_isDashingRight = false;
+            m_isDashingLeft = false;
+            m_player->cTransform->velocity.x = 0; // Reset velocity
+            m_player->cShape->rectangle.setSize(sf::Vector2f(90.0f, 180.0f));
         }
     }
 
-    if (m_player->cInput->down)
+    // Regular player movement (only if not dashing)
+    if (!m_isDashingLeft && !m_isDashingRight)
     {
-        m_player->cTransform->velocity.y = 5;
+        if (m_player->cInput->up && !m_isJumping)
+        {
+            if (m_player->cTransform->pos.y >= GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f)
+            {
+                m_player->cTransform->velocity.y = -15;
+                m_isJumping = true;
+            }
+        }
+
+        if (m_player->cInput->left)
+        {
+            m_player->cTransform->velocity.x = -6;
+        }
+        else if (m_player->cInput->right)
+        {
+            m_player->cTransform->velocity.x = 6;
+        }
+        else
+        {
+            m_player->cTransform->velocity.x = 0; // Stop horizontal movement when no input
+        }
     }
 
-    if (m_player->cInput->left)
+
+    // Apply regular velocity updates
+    if (!m_isDashingLeft && !m_isDashingRight)
     {
-        m_player->cTransform->velocity.x = -6;
+        m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
+        m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
     }
 
-    if (m_player->cInput->right)
-    {
-        m_player->cTransform->velocity.x = 6;
-    }
-
-    // Dashing
-    if (m_isDashingRight && m_player->cTransform->pos.y >= GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f)
-    {
-        m_player->cTransform->velocity.y = -5; // Optional upward movement during dash
-        m_player->cTransform->velocity.x = 50; // Dash speed to the right
-        m_isDashingRight = false; // Reset dash state
-    }
-    if (m_isDashingLeft && m_player->cTransform->pos.y >= GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f)
-    {
-        m_player->cTransform->velocity.y = -5; // Optional upward movement during dash
-        m_player->cTransform->velocity.x = -50; // Dash speed to the left
-        m_isDashingLeft = false; // Reset dash state
-    }
-
-    m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
-    m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
-
-    // bullet movement
+    // Bullet movement
     for (auto& bullet : m_entities.getEntities("bullet"))
     {
         if (bullet->cTransform)
@@ -848,7 +872,7 @@ void Game::sMovement()
         }
     }
 
-    // arrow movement
+    // Arrow movement
     for (auto& arrow : m_entities.getEntities("arrow"))
     {
         if (arrow && arrow->cTransform)
@@ -873,32 +897,39 @@ void Game::sUserInput()
         {
             sf::Keyboard::Key key = event.key.code;
 
+            // Check if dashing is allowed (cooldown completed)
+            if (m_dashCooldownClock.getElapsedTime().asSeconds() >= DASH_COOLDOWN)
+            {
+                m_canDash = true; // Reset dash availability
+            }
+
             if (!m_keyHeld[key])
             {
-                auto now = m_keyPressClocks[key].getElapsedTime().asSeconds();
-                if (key == sf::Keyboard::D && now < DOUBLE_TAP_THRESHOLD)
+                float now = m_keyPressClocks[key].getElapsedTime().asSeconds();
+
+                if (m_canDash && m_keyClockStarted[key] && now < DOUBLE_TAP_THRESHOLD)
                 {
-                    if (!m_isDashingRight)
+                    if (key == sf::Keyboard::D && !m_isDashingRight)
                     {
                         m_isDashingRight = true;
-                        std::cout << "dashing right\n";
+                        m_canDash = false;
+                        m_dashCooldownClock.restart();
+                        m_dashClock.restart(); // Start dash timer
                     }
-                }
-                else if (key == sf::Keyboard::A && now < DOUBLE_TAP_THRESHOLD)
-                {
-                    if (!m_isDashingLeft)
+                    else if (key == sf::Keyboard::A && !m_isDashingLeft)
                     {
                         m_isDashingLeft = true;
-                        std::cout << "dashing left\n";
+                        m_canDash = false;
+                        m_dashCooldownClock.restart();
+                        m_dashClock.restart(); // Start dash timer
                     }
                 }
 
-                // Reset the clock for single-tap
+                m_keyClockStarted[key] = true;
                 m_keyPressClocks[key].restart();
             }
 
-            // Mark key as held
-            m_keyHeld[key] = true;
+            m_keyHeld[key] = true; // Mark key as held
 
             // Handle movement keys
             switch (key)
@@ -906,9 +937,6 @@ void Game::sUserInput()
                 case sf::Keyboard::W:
                     m_player->cInput->up = true;
                     m_isJumping = false;
-                    break;
-                case sf::Keyboard::S:
-                    m_player->cInput->down = true;
                     break;
                 case sf::Keyboard::A:
                     m_player->cInput->left = true;
@@ -924,18 +952,12 @@ void Game::sUserInput()
         if (event.type == sf::Event::KeyReleased)
         {
             sf::Keyboard::Key key = event.key.code;
+            m_keyHeld[key] = false; // Mark key as released
 
-            // Mark key as released
-            m_keyHeld[key] = false;
-
-            // Handle movement key release
             switch (key)
             {
                 case sf::Keyboard::W:
                     m_player->cInput->up = false;
-                    break;
-                case sf::Keyboard::S:
-                    m_player->cInput->down = false;
                     break;
                 case sf::Keyboard::A:
                     m_player->cInput->left = false;
@@ -947,7 +969,6 @@ void Game::sUserInput()
                     break;
             }
         }
-
         // Shooting controls
         if (event.type == sf::Event::MouseButtonPressed)
         {
@@ -968,7 +989,6 @@ void Game::sUserInput()
                 sf::Time elapsed = m_mouseClock.getElapsedTime();
                 m_isMousePressed = false;
 
-                // Final bullet speed calculation
                 float chargedSpeed = 0;
                 if (elapsed.asSeconds() < 0.75)
                 {
