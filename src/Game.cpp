@@ -796,37 +796,32 @@ void Game::sRender()
 
 void Game::sMovement()
 {
-    float dt = m_clock.restart().asSeconds();
+    float elapsed = m_dashClock.getElapsedTime().asSeconds();
 
-    // Handle dashing logic
-    if (m_isDashingRight || m_isDashingLeft)
+    if (elapsed < DASH_DURATION)
     {
-        float elapsed = m_dashClock.getElapsedTime().asSeconds();
+        // Calculate dash velocity using deltatime
+        float dashSpeed = (m_isDashingRight ? DASH_DISTANCE : -DASH_DISTANCE) / DASH_DURATION;
+        m_player->cTransform->velocity.x = dashSpeed;
+        m_player->cShape->rectangle.setSize(sf::Vector2f(90.0f, 90.0f));
+        m_player->cShape->rectangle.setOrigin(45.0f, 45.0f);
 
-        if (elapsed < DASH_DURATION)
+        if (m_player->cTransform->pos.y <= groundLimit)
         {
-            // Calculate dash velocity using deltatime
-            float dashSpeed = (m_isDashingRight ? DASH_DISTANCE : -DASH_DISTANCE) / DASH_DURATION;
-            m_player->cTransform->velocity.x = dashSpeed;
-            m_player->cTransform->velocity.y = 2;
-            m_player->cShape->rectangle.setSize(sf::Vector2f(90.0f, 90.0f));
-            if (m_player->cTransform->pos.y < GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 5.0f)
-            {
-                m_player->cTransform->pos.y = GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 5.0f;
-            }
-            else {
-                m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
-            }
-
+            // Player is on the ground, dash along the ground
+            m_player->cTransform->velocity.y = 0;
+            
+            m_player->cTransform->pos.y = GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f;
         }
-        else
-        {
-            // End dash
-            m_isDashingRight = false;
-            m_isDashingLeft = false;
-            m_player->cTransform->velocity.x = 0; // Reset velocity
-            m_player->cShape->rectangle.setSize(sf::Vector2f(90.0f, 180.0f));
-        }
+    }
+    else
+    {
+        // End dash
+        m_isDashingRight = false;
+        m_isDashingLeft = false;
+        m_player->cTransform->velocity.x = 0; // Reset velocity
+        m_player->cShape->rectangle.setSize(sf::Vector2f(90.0f, 180.0f));
+        m_player->cShape->rectangle.setOrigin(45.0f, 90.0f);
     }
 
     // Regular player movement (only if not dashing)
