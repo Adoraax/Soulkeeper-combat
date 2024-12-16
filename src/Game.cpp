@@ -4,6 +4,9 @@
 #include <fstream>
 #include <cmath>
 
+#define tick_rate 128
+#define visual_frame_rate 60
+
 Game::Game(const std::string & config)
 {
     init(config);
@@ -15,8 +18,8 @@ void Game::init(const std::string & path)
 
     //fin >> m_playerConfig.SR >> m_playerConfig.CR;
 
-    m_window.create(sf::VideoMode(3640, 1080), "Assignment 2");
-    m_window.setFramerateLimit(60);
+    m_window.create(sf::VideoMode(3840, 1080), "Assignment 2");
+    m_window.setFramerateLimit(tick_rate);
     GROUND_LEVEL = m_window.getSize().y - 2.0f;
 
     spawnPlayer();
@@ -31,6 +34,8 @@ void Game::run()
     while (m_running)
     {
         m_deltatime = m_clock.restart().asSeconds();
+        multiplier = m_deltatime * visual_frame_rate;
+        //std:: cout << "Delta Time: " << m_deltatime << "\n";
         //std::cout << "Delta Time: " << m_deltatime << "\n";
         m_entities.update();
         //sEnemySpawner();
@@ -39,6 +44,8 @@ void Game::run()
         sUserInput();
         slowMotion();
         sMovement();
+        //slowMotion();
+        
         sRender(); 
         //sLifespan();
         //chasePlayer();
@@ -143,9 +150,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & target)
 
 
 void Game::spawnArrow(std::shared_ptr<Entity> entity, const Vec2 & target)
-
 {
-    static int arrowCount = 0; // Static variable to keep track of the number of arrows spawned
     auto arrow = m_entities.addEntity("arrow");
 
     Vec2 direction = (m_target - m_player->cTransform->pos).normalize();
@@ -154,17 +159,7 @@ void Game::spawnArrow(std::shared_ptr<Entity> entity, const Vec2 & target)
     arrow->cShape = std::make_shared<CShape>(sf::Vector2f(70.0f, 15.0f), sf::Color(0, 0, 0), sf::Color(255, 255, 255), 2.0f);
 
     m_bulletSpawnTime = m_currentFrame;
-
-    // Increment the arrow count and log it to the console
-    for (auto& arrow : m_entities.getEntities("arrow"))
-    {
-            arrowCount++;
-            std::cout << "Arrow number: " << arrowCount << "\n";
-    }
-    
 }
-
-
 
 // TODO: FIX THIS FUNCTION
 void Game::spawnBoundary()
@@ -195,46 +190,44 @@ void Game::sBoundarySpawner()
     spawnBoundary();
 }
 
-void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
+void Game::spawnTrajectoryArc(std::shared_ptr<Entity> entity, const Vec2 & target)
+{
+    auto trajectory = m_entities.addEntity("trajectory");
+    Vec2 direction = (m_target - m_player->cTransform->pos).normalize();
+    FP = m_player->cTransform->velocity.x * multiplier;
+    float px = m_player->cTransform->pos.x + FP;
+
+    trajectory->cTransform = std::make_shared<CTransform>(m_player->cTransform->pos, direction * m_bulletSpeed, 0.0f, 0.0f);
+    trajectory->cShape = std::make_shared<CShape>(10, 8, sf::Color(0, 0, 0), sf::Color(255, 255, 255), 2);
+
+}
+
+void Game::mapTrajectory()
 {
 
 }
 
 
 // Slow Motion Function using scaling velocity -- trajectory is affected
-// void Game::slowMotion()
-// {
-//     static bool slowMotionApplied = false; // Tracks whether slow motion is active
-
-//     if (m_isMousePressed && !slowMotionApplied)
-//     {
-//         for (auto& e : m_entities.getEntities())
-//         {
-//             if (e->tag() != "player" && e->cTransform)
-//             {
-//                 e->cTransform->speed *= 0.25f; // Scale down velocity
-//             }
-//         }
-//         // Scale other forces like gravity, if necessary
-//         GRAVITY *= 0.25f;
-//         //AIR_RESISTANCE *= 0.25f;
-//         slowMotionApplied = true;
-//     }
-//     else if (!m_isMousePressed && slowMotionApplied)
-//     {
-//         for (auto& e : m_entities.getEntities())
-//         {
-//             if (e->tag() != "player" && e->cTransform)
-//             {
-//                 e->cTransform->speed *= 4.0f; // Reset velocity to normal
-//             }
-//         }
-//         // Reset gravity scaling
-//         GRAVITY *= 4.0f;
-//         //AIR_RESISTANCE *= 4.0f;
-//         slowMotionApplied = false;
-//     }
-// }
+void Game::slowMotion()
+{
+    //static bool slowMotionApplied = false; // Tracks whether slow motion is active
+    
+    m_isSlowMotionApplied = false;
+    if (m_isMousePressed)
+    
+    {
+        std::cout << "slowMotion" << "\n";
+        for (auto& e : m_entities.getEntities())
+        {
+            if (e->tag() != "player" && e->cTransform)
+            {
+                e->cTransform->pos += e->cTransform->velocity * multiplier/3.0f; // Scale velocity
+            }
+        }
+        m_isSlowMotionApplied = true;
+    }
+}
 
 
 // Slow motion using frame limits -- static time scaling
@@ -271,29 +264,29 @@ void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
 
 
 // Slow motion using frame limits -- dynamic time scaling
-void Game::slowMotion()
-{
-    // << "slowMotion" << "\n";
-    if (m_isMousePressed)
-    {
-        // Calculate the time scale based on elapsed time
-        float elapsedTime = m_mouseClock.getElapsedTime().asSeconds() * 1.5f;
-        m_timeScale = std::exp(-m_decayRate * elapsedTime); // Time decay
+// void Game::slowMotion()
+// {
+//     // << "slowMotion" << "\n";
+//     if (m_isMousePressed)
+//     {
+//         // Calculate the time scale based on elapsed time
+//         float elapsedTime = m_mouseClock.getElapsedTime().asSeconds() * 1.5f;
+//         m_timeScale = std::exp(-m_decayRate * elapsedTime); // Time decay
 
-        // Calculate the framerate limit (minimum limit of 15 to prevent stutter)
-        unsigned int frameLimit = static_cast<unsigned int>(std::max(10.0f, 60.0f * m_timeScale));
-        m_window.setFramerateLimit(frameLimit);
+//         // Calculate the framerate limit (minimum limit of 15 to prevent stutter)
+//         unsigned int frameLimit = static_cast<unsigned int>(std::max(10.0f, 60.0f * m_timeScale));
+//         m_window.setFramerateLimit(frameLimit);
 
-        m_isSlowMotionApplied = true;
-        //std::cout << "slow motion applied\n";
-    }
-    else if (m_isSlowMotionApplied) // When the mouse is released, reset framerate
-    {
-        m_window.setFramerateLimit(60);
-        m_isSlowMotionApplied = false;
-        //std::cout << "slow motion removed\n";
-    }
-}
+//         m_isSlowMotionApplied = true;
+//         //std::cout << "slow motion applied\n";
+//     }
+//     else if (m_isSlowMotionApplied) // When the mouse is released, reset framerate
+//     {
+//         m_window.setFramerateLimit(60);
+//         m_isSlowMotionApplied = false;
+//         //std::cout << "slow motion removed\n";
+//     }
+// }
 
 
 // Update the lifespan of entities with lifespan components
@@ -553,10 +546,15 @@ void Game::sApplyGravity()
         if (e->cTransform && e->cShape)
         {
             // Apply gravity to Y velocity
-            if (e->tag() == "player")
+            if (e->tag() == "player" && m_isSlowMotionApplied)
             {
-                e->cTransform->velocity.y += GRAVITY * m_deltatime * 1.75f;
+                e->cTransform->velocity.y += ((GRAVITY * m_deltatime * multiplier) /3) * 1.75f;
             }
+            else if (e->tag() == "player" && !m_isSlowMotionApplied)
+            {
+                e->cTransform->velocity.y += (GRAVITY * m_deltatime) * 1.75f;
+            }
+            
             else if (e->tag() == "enemy")
             {
                 e->cTransform->velocity.y += GRAVITY * m_deltatime;
@@ -565,13 +563,19 @@ void Game::sApplyGravity()
             {
                 e->cTransform->velocity.y += GRAVITY * m_deltatime;
             }
-            else if (e->tag() == "arrow")
+            else if (e->tag() == "arrow" && m_isSlowMotionApplied)
             {
-                e->cTransform->velocity.y += GRAVITY * m_deltatime;
+                e->cTransform->velocity.y += ((GRAVITY * m_deltatime * multiplier) /3);
+            }
+            else if (e->tag() == "arrow" && !m_isSlowMotionApplied)
+            {
+                e->cTransform->velocity.y += (GRAVITY * m_deltatime);
             }
 
             // Update position based on velocity
             e->cTransform->pos += e->cTransform->velocity * m_deltatime;
+            std::cout << "Velocityyyy: " << e->cTransform->velocity.y << "\n";
+            std::cout << "Velocityxxx: " << e->cTransform->velocity.x << "\n";
 
             // Handle Y-axis deceleration
             // if (e->cTransform->pos.y < groundLimit)
@@ -755,7 +759,7 @@ void Game::sApplyGravity()
                 e->cShape->rectangle.setRotation(angleDeg);
                 if (e->cTransform->pos.y < groundLimit)
                 {
-                    std::cout << "Arrow angle: " << angleDeg << "\n";
+                    //std::cout << "Arrow angle: " << angleDeg << "\n";
                 }
             }
             
@@ -796,6 +800,7 @@ void Game::sRender()
 
 void Game::sMovement()
 {
+    
     float elapsed = m_dashClock.getElapsedTime().asSeconds();
 
     if (elapsed < DASH_DURATION)
@@ -872,7 +877,14 @@ void Game::sMovement()
     {
         if (arrow && arrow->cTransform)
         {
-            arrow->cTransform->pos += arrow->cTransform->velocity;
+            if (m_isSlowMotionApplied) 
+            {
+                continue;
+            }
+            else
+            {
+                arrow->cTransform->pos += arrow->cTransform->velocity;
+            }
         }
     }
 }
@@ -972,7 +984,7 @@ void Game::sUserInput()
                 m_mouseClock.restart();
                 m_isMousePressed = true;
                 
-                std::cout << "Left Mouse Button Pressed\n";
+                //std::cout << "Left Mouse Button Pressed\n";
             }
         }
 
@@ -995,8 +1007,8 @@ void Game::sUserInput()
                 }
 
                 m_bulletSpeed = chargedSpeed; // Set final bullet speed
-                std::cout << "Left Mouse Button Released\n";
-                std::cout << "Bullet Speed Charged: " << m_bulletSpeed << "\n";
+                //std::cout << "Left Mouse Button Released\n";
+                //std::cout << "Bullet Speed Charged: " << m_bulletSpeed << "\n";
 
                 spawnArrow(m_player, m_target);
                 m_bulletSpeed = 17.0f; // Reset speed after usage
@@ -1018,6 +1030,6 @@ void Game::sUserInput()
             chargingSpeed = elapsed.asSeconds() * elapsed.asSeconds() * 18 + 17.0f;
         }
 
-        std::cout << "Charging Bullet Speed: " << chargingSpeed << " (Elapsed: " << elapsed.asSeconds() << " seconds)\n";
+        //std::cout << "Charging Bullet Speed: " << chargingSpeed << " (Elapsed: " << elapsed.asSeconds() << " seconds)\n";
     }
 }

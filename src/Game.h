@@ -36,6 +36,7 @@ class Game
     float               m_timeScale = 1.0f;
     float               m_decayRate = 2.0f;
     float               timeAdjustedDelta;
+    float               multiplier;
     
     // Physics
     float               groundLimit;
@@ -85,11 +86,11 @@ class Game
     void spawnSmallEnemies(std::shared_ptr<Entity> entity);
     void spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
     void spawnArrow(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
-    void spawnSpecialWeapon(std::shared_ptr<Entity> entity);
+    void spawnTrajectoryArc(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
     void spawnBoundary();
     
     void slowMotion();
-
+    void mapTrajectory();
     void chasePlayer();
 
 public:
