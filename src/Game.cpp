@@ -668,27 +668,28 @@ void Game::sMovement()
 {
     // i need help
     float elapsed = m_dashClock.getElapsedTime().asSeconds();
-
-    // if (m_isSlowMotionApplied)
-    // {
-    //     DASH_DURATION = DASH_DURATION * multiplier;
-    // }
-    // else
-    // {
-    //     DASH_DURATION = 0.25f;
-    // }
     
+    if (m_isSlowMotionApplied)
+    {
+        DASH_DURATION = 0.5f / multiplier;
+    }
+    else
+    {
+        DASH_DURATION = 0.5f;
+    }
+
     if (elapsed < DASH_DURATION)
     {
         // Calculate dash velocity using deltatime
         
         float dashSpeed = (m_isDashingRight ? DASH_DISTANCE : -DASH_DISTANCE) / DASH_DURATION;
-        if (m_isSlowMotionApplied)
-        {
-            dashSpeed *= multiplier; // Apply multiplier to dash speed
-        }
+        // if (m_isSlowMotionApplied)
+        // {
+        //     dashSpeed *= multiplier; // Apply multiplier to dash speed
+        // }
         
         m_player->cTransform->velocity.x = (dashSpeed * multiplier)/3;
+        
         m_player->cShape->rectangle.setSize(sf::Vector2f(90.0f, 90.0f));
         m_player->cShape->rectangle.setOrigin(45.0f, 45.0f);
 
@@ -713,7 +714,7 @@ void Game::sMovement()
     // Regular player movement (only if not dashing)
     if (!m_isDashingLeft && !m_isDashingRight)
     {
-        if (m_player->cInput->up && !m_isJumping && !m_isSlowMotionApplied)
+        if (m_player->cInput->up && !m_isJumping)
         {
             if (m_player->cTransform->pos.y >= GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f)
             {
@@ -721,31 +722,14 @@ void Game::sMovement()
                 m_isJumping = true;
             }
         }
-        else if (m_player->cInput->up && !m_isJumping && m_isSlowMotionApplied)
-        {
-            if (m_player->cTransform->pos.y >= GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f)
-            {
-                m_player->cTransform->velocity.y = (-10 * multiplier)/3;
-                m_isJumping = true;
-            }
-        }
-        else
 
-        if (m_player->cInput->left && !m_isSlowMotionApplied)
+        if (m_player->cInput->left)
         {
             m_player->cTransform->velocity.x = -6;
         }
-        else if (m_player->cInput->left && m_isSlowMotionApplied)
-        {
-            m_player->cTransform->velocity.x = (-6 * multiplier)/3;
-        }
-        else if (m_player->cInput->right && !m_isSlowMotionApplied)
+        else if (m_player->cInput->right)
         {
             m_player->cTransform->velocity.x = 6;
-        }
-        else if (m_player->cInput->right && m_isSlowMotionApplied)
-        {
-            m_player->cTransform->velocity.x = (6 * multiplier)/3;
         }
         else
         {
@@ -753,8 +737,7 @@ void Game::sMovement()
         }
     }
 
-    // this was changed
-    // Apply regular velocity updates
+    // Apply velocity updates
     if (!m_isDashingLeft && !m_isDashingRight)
     {
         if (!m_isSlowMotionApplied)
@@ -764,8 +747,8 @@ void Game::sMovement()
         }
         else
         {
-            m_player->cTransform->pos.x += (m_player->cTransform->velocity.x * m_deltatime * multiplier)/3;
-            m_player->cTransform->pos.y += (m_player->cTransform->velocity.y * m_deltatime * multiplier)/3;
+            m_player->cTransform->pos.x += (m_player->cTransform->velocity.x * multiplier)/3;
+            m_player->cTransform->pos.y += (m_player->cTransform->velocity.y * multiplier)/3;
         }
     }
 

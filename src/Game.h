@@ -53,8 +53,8 @@ class Game
     bool                m_isMousePressed = false;
     bool                m_isJumping = false;
     bool                m_canDash = true;
-    float         DASH_DISTANCE = 500.0f;    // Total distance covered in a dash
-    float         DASH_DURATION = 0.25f;     // Time (in seconds) for a full dash
+    float         DASH_DISTANCE = 300.0f;    // Total distance covered in a dash
+    float         DASH_DURATION = 0.5f;     // Time (in seconds) for a full dash
     const float         DOUBLE_TAP_THRESHOLD = 0.25f;
     const float         DASH_COOLDOWN = 1.0f;
     sf::Clock           m_mouseClock;
