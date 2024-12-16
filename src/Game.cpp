@@ -671,7 +671,7 @@ void Game::sMovement()
     
     if (m_isSlowMotionApplied)
     {
-        DASH_DURATION = 0.5f / multiplier;
+        DASH_DURATION = 0.75f / multiplier;
     }
     else
     {
