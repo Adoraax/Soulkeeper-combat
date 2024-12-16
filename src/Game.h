@@ -6,6 +6,7 @@
 //#include <memory>
 #include <SFML/Graphics.hpp>
 #include <unordered_map>
+#include <vector>
 
 struct PlayerConfig { int SR, CR, FR, FG, FB, OR, OG, OB, OT, V; float S; };
 struct EnemyConfig  { int SR, CR, OR, OG, OB, OT, VMIN, VMAX, L, SI; float SMIN, SMAX; };
@@ -32,8 +33,7 @@ class Game
     bool                m_running = true;   // whether the game is running
     bool                m_isSlowMotionApplied = false;
     float               m_deltatime;
-    float               m_bulletSpeed = 17.0f;
-    float               m_timeScale = 1.0f;
+    float               m_bulletSpeed = 15.0f;
     float               m_decayRate = 2.0f;
     float               timeAdjustedDelta;
     float               multiplier;
@@ -53,9 +53,8 @@ class Game
     bool                m_isMousePressed = false;
     bool                m_isJumping = false;
     bool                m_canDash = true;
-    float               m_dashVelocity = 2.0f;              // Current dash velocity
-    const float         DASH_DISTANCE = 500.0f;    // Total distance covered in a dash
-    const float         DASH_DURATION = 0.25f;     // Time (in seconds) for a full dash
+    float         DASH_DISTANCE = 500.0f;    // Total distance covered in a dash
+    float         DASH_DURATION = 0.25f;     // Time (in seconds) for a full dash
     const float         DOUBLE_TAP_THRESHOLD = 0.25f;
     const float         DASH_COOLDOWN = 1.0f;
     sf::Clock           m_mouseClock;
@@ -64,6 +63,7 @@ class Game
     std::map<sf::Keyboard::Key, sf::Clock> m_keyPressClocks; // Track the time of the last key press
     std::map<sf::Keyboard::Key, bool> m_keyClockStarted;
     std::unordered_map<sf::Keyboard::Key, bool> m_keyHeld;
+    std::vector<sf::Vector2f> m_trajectory;
 
 
     std::shared_ptr<Entity> m_player;
@@ -83,14 +83,11 @@ class Game
 
     void spawnPlayer();
     void spawnEnemy();
-    void spawnSmallEnemies(std::shared_ptr<Entity> entity);
     void spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
     void spawnArrow(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
-    void spawnTrajectoryArc(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
     void spawnBoundary();
     
     void slowMotion();
-    void mapTrajectory();
     void chasePlayer();
 
 public:

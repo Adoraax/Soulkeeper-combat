@@ -35,8 +35,6 @@ void Game::run()
     {
         m_deltatime = m_clock.restart().asSeconds();
         multiplier = m_deltatime * visual_frame_rate;
-        //std:: cout << "Delta Time: " << m_deltatime << "\n";
-        //std::cout << "Delta Time: " << m_deltatime << "\n";
         m_entities.update();
         //sEnemySpawner();
         sApplyGravity();
@@ -44,8 +42,6 @@ void Game::run()
         sUserInput();
         slowMotion();
         sMovement();
-        //slowMotion();
-        
         sRender(); 
         //sLifespan();
         //chasePlayer();
@@ -77,13 +73,11 @@ void Game::spawnPlayer()
     float my = m_window.getSize().y / 2.0f - (m_window.getSize().y / 2.0f)/-2;
 
     entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f, 1.0f);
-    //entity->cShape = std::make_shared<CShape>(32.0f, 8, sf::Color(10, 10, 10), sf::Color(255, 0, 0), 4.0f); // circle shape
-    entity->cShape = std::make_shared<CShape>(sf::Vector2f(90.0f, 180.0f), sf::Color(0, 0, 0), sf::Color(255, 0, 0), 2.0f); // rectangle shape
+    entity->cShape = std::make_shared<CShape>(sf::Vector2f(90.0f, 180.0f), sf::Color(0, 0, 0), sf::Color(255, 0, 0), 2.0f);
 
     entity->cInput = std::make_shared<CInput>();
 
     m_player = entity;
-    //std::cout << "Player Spawned\n";
 }
 
 // Spawn an enemy entity
@@ -125,16 +119,6 @@ void Game::spawnEnemy()
     m_lastEnemySpawnTime = m_currentFrame;
 }
 
-void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
-{
-    // TODO: spawn small enemies at the location of the input enemy e
-
-    // when we create the smaller enemy, we have to read the values of the original enemy
-    // - spawn a number of small enemies equal to the vertices of the shape
-    // - set each small enemy to the same color as the original, hakf the size
-    // - small enemies are worth double points of the original enemy
-}
-
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & target)
 {
     auto bullet = m_entities.addEntity("bullet");
@@ -157,6 +141,7 @@ void Game::spawnArrow(std::shared_ptr<Entity> entity, const Vec2 & target)
     
     arrow->cTransform = std::make_shared<CTransform>(m_player->cTransform->pos, direction * m_bulletSpeed, 0.0f, 0.0f);
     arrow->cShape = std::make_shared<CShape>(sf::Vector2f(70.0f, 15.0f), sf::Color(0, 0, 0), sf::Color(255, 255, 255), 2.0f);
+    arrow->cShape->rectangle.setOrigin(arrow->cShape->rectangle.getSize().x / 2.0f, arrow->cShape->rectangle.getSize().y / 2.0f);
 
     m_bulletSpawnTime = m_currentFrame;
 }
@@ -190,106 +175,24 @@ void Game::sBoundarySpawner()
     spawnBoundary();
 }
 
-void Game::spawnTrajectoryArc(std::shared_ptr<Entity> entity, const Vec2 & target)
-{
-    auto trajectory = m_entities.addEntity("trajectory");
-    Vec2 direction = (m_target - m_player->cTransform->pos).normalize();
-    FP = m_player->cTransform->velocity.x * multiplier;
-    float px = m_player->cTransform->pos.x + FP;
 
-    trajectory->cTransform = std::make_shared<CTransform>(m_player->cTransform->pos, direction * m_bulletSpeed, 0.0f, 0.0f);
-    trajectory->cShape = std::make_shared<CShape>(10, 8, sf::Color(0, 0, 0), sf::Color(255, 255, 255), 2);
-
-}
-
-void Game::mapTrajectory()
-{
-
-}
-
-
-// Slow Motion Function using scaling velocity -- trajectory is affected
 void Game::slowMotion()
 {
-    //static bool slowMotionApplied = false; // Tracks whether slow motion is active
-    
     m_isSlowMotionApplied = false;
     if (m_isMousePressed)
-    
     {
-        std::cout << "slowMotion" << "\n";
+        //std::cout << "slowMotion" << "\n";
         for (auto& e : m_entities.getEntities())
         {
             if (e->tag() != "player" && e->cTransform)
             {
-                e->cTransform->pos += e->cTransform->velocity * multiplier/3.0f; // Scale velocity
+                e->cTransform->pos += (e->cTransform->velocity * m_deltatime * multiplier)/3.0f; // Scale velocity
             }
         }
         m_isSlowMotionApplied = true;
     }
 }
 
-
-// Slow motion using frame limits -- static time scaling
-// void Game::slowMotion()
-// {
-//     m_timeScale = std::exp(-m_decayRate * m_mouseClock.getElapsedTime().asSeconds());
-//     // std::cout << "Time Scale: " << m_timeScale << "\n";
-//     // std::cout << "Mouse held for: " << m_mouseClock.getElapsedTime().asSeconds() << " seconds\n";
-//     if (m_isMousePressed && !m_isSlowMotionApplied)
-//     {
-//         for (auto& e : m_entities.getEntities())
-//         {
-//             if (e->tag() != "player" && e->cTransform)
-//             {
-//                 //e->cTransform->velocity *= 0.5f;
-//                 m_window.setFramerateLimit(15);
-//             }
-//         }
-//         m_isSlowMotionApplied = true; // Set the flag to indicate slow motion is applied
-//     }
-//     else if (!m_isMousePressed && m_isSlowMotionApplied)
-//     {
-//         for (auto& e : m_entities.getEntities())
-//         {
-//             if (e->tag() != "player" && e->cTransform)
-//             {
-//                 //e->cTransform->velocity *= 2.0f; // Restore the original velocity
-//                 m_window.setFramerateLimit(60);
-//             }
-//         }
-//         m_isSlowMotionApplied = false; // Reset the flag
-//     }
-// }
-
-
-// Slow motion using frame limits -- dynamic time scaling
-// void Game::slowMotion()
-// {
-//     // << "slowMotion" << "\n";
-//     if (m_isMousePressed)
-//     {
-//         // Calculate the time scale based on elapsed time
-//         float elapsedTime = m_mouseClock.getElapsedTime().asSeconds() * 1.5f;
-//         m_timeScale = std::exp(-m_decayRate * elapsedTime); // Time decay
-
-//         // Calculate the framerate limit (minimum limit of 15 to prevent stutter)
-//         unsigned int frameLimit = static_cast<unsigned int>(std::max(10.0f, 60.0f * m_timeScale));
-//         m_window.setFramerateLimit(frameLimit);
-
-//         m_isSlowMotionApplied = true;
-//         //std::cout << "slow motion applied\n";
-//     }
-//     else if (m_isSlowMotionApplied) // When the mouse is released, reset framerate
-//     {
-//         m_window.setFramerateLimit(60);
-//         m_isSlowMotionApplied = false;
-//         //std::cout << "slow motion removed\n";
-//     }
-// }
-
-
-// Update the lifespan of entities with lifespan components
 void Game::sLifespan()
 {
     for (auto& e : m_entities.getEntities())
@@ -334,7 +237,6 @@ void Game::sLifespan()
 // Collision detection
 void Game::sCollision()
 {
-    //std::cout << "sCollision" << "\n";
     // enemy collision with player
     for (auto& enemy : m_entities.getEntities("enemy"))
     {
@@ -372,37 +274,15 @@ void Game::sCollision()
         }
     }
 
-    // arrow collision -- oriiignal implementation
-    // arrow collision with enemy
-    // for (auto& arrow : m_entities.getEntities("arrow"))
-    // {
-    //     for (auto& enemy : m_entities.getEntities("enemy"))
-    //     {
-    //         float dx = arrow->cTransform->pos.x - enemy->cTransform->pos.x;
-    //         float dy = arrow->cTransform->pos.y - enemy->cTransform->pos.y;
-    //         float distance = std::sqrt(dx * dx + dy * dy);
-    //         if (distance < (arrow->cShape->rectangle.getSize().x + enemy->cShape->circle.getRadius())) 
-    //         {
-    //             //std::cout << "enemy destroyed\n";
-    //             enemy->destroy();
-    //             arrow->destroy();
-    //         }
-    //     }
-    // }
-
-
     // Arrow collision with enemy -- safer implementation
     for (auto& arrow : m_entities.getEntities("arrow"))
     {
-        // Ensure arrow has the required components
         if (!arrow->cTransform || !arrow->cShape)
         {
             continue;
         }
-
         for (auto& enemy : m_entities.getEntities("enemy"))
         {
-            // Ensure enemy has the required components
             if (!enemy->cTransform || !enemy->cShape)
             {
                 continue;
@@ -476,25 +356,32 @@ void Game::sCollision()
             float arrow2Width = arrow2->cShape->rectangle.getSize().x;
 
             // Check for collision
-            if (distance < (arrow1Width + arrow2Width) / 2.0f)
+            if (distance < (arrow1Width + arrow2Width)/2)
             {
-                // Example response: Destroy both arrows
-                // float angle1Rad= std::atan2(arrow1->cTransform->velocity.y, arrow1->cTransform->velocity.x);
-                // float angle1Deg = angle1Rad * 180.0f / M_PI;
-                // float angle2Rad = std::atan2(arrow2->cTransform->velocity.y, arrow2->cTransform->velocity.x);
-                // float angle2Deg = angle2Rad * 180.0f / M_PI;
+                if (arrow1->cTransform->velocity == Vec2(0, 0))
+                {
+                    // arrow2->cTransform->velocity = Vec2(0, 0);
+                    // arrow2->cTransform->pos.y = groundLimit;
+                    continue;
+                }
+                else if (arrow2->cTransform->velocity == Vec2(0, 0))
+                {
+                    // arrow1->cTransform->velocity = Vec2(0, 0);
+                    // arrow1->cTransform->pos.y = groundLimit;
+                    continue;
+                }
+                else
+                {
+                    float reflectionArrow1VelocityY = ((arrow1->cTransform->velocity.y + arrow2->cTransform->velocity.y) / 2.0f) * 1.5;
+                    float reflectionArrow1VelocityX = ((arrow1->cTransform->velocity.x + arrow2->cTransform->velocity.x) / 2.0f) * 1.5;
+                    float reflectionArrow2VelocityY = ((arrow2->cTransform->velocity.y + arrow2->cTransform->velocity.y) / 2.0f) * 0.5;
+                    float reflectionArrow2VelocityX = ((arrow2->cTransform->velocity.x + arrow2->cTransform->velocity.x) / 2.0f) * 0.5;
 
-                float reflectionArrow1VelocityY = (arrow1->cTransform->velocity.y + arrow2->cTransform->velocity.y) / 2.0f * 1.5;
-                float reflectionArrow1VelocityX = (arrow1->cTransform->velocity.x + arrow2->cTransform->velocity.x) / 2.0f * 1.5;
-                float reflectionArrow2VelocityY = (arrow2->cTransform->velocity.y + arrow2->cTransform->velocity.y) / 2.0f * 0.5;
-                float reflectionArrow2VelocityX = (arrow2->cTransform->velocity.x + arrow2->cTransform->velocity.x) / 2.0f * 0.5;
+                    arrow1->cTransform->velocity = Vec2(reflectionArrow1VelocityX, reflectionArrow1VelocityY);
+                    arrow2->cTransform->velocity = Vec2(reflectionArrow2VelocityX, reflectionArrow2VelocityY);
+                }
+                
 
-                arrow1->cTransform->velocity = Vec2(reflectionArrow1VelocityX, reflectionArrow1VelocityY);
-                arrow2->cTransform->velocity = Vec2(reflectionArrow2VelocityX, reflectionArrow2VelocityY);
-
-
-
-                // Break out of the inner loop to avoid accessing a destroyed arrow
                 break;
             }
         }
@@ -548,7 +435,7 @@ void Game::sApplyGravity()
             // Apply gravity to Y velocity
             if (e->tag() == "player" && m_isSlowMotionApplied)
             {
-                e->cTransform->velocity.y += ((GRAVITY * m_deltatime * multiplier) /3) * 1.75f;
+                e->cTransform->velocity.y += ((GRAVITY * m_deltatime * multiplier) /3);
             }
             else if (e->tag() == "player" && !m_isSlowMotionApplied)
             {
@@ -572,42 +459,14 @@ void Game::sApplyGravity()
                 e->cTransform->velocity.y += (GRAVITY * m_deltatime);
             }
 
-            // Update position based on velocity
-            e->cTransform->pos += e->cTransform->velocity * m_deltatime;
-            std::cout << "Velocityyyy: " << e->cTransform->velocity.y << "\n";
-            std::cout << "Velocityxxx: " << e->cTransform->velocity.x << "\n";
-
-            // Handle Y-axis deceleration
-            // if (e->cTransform->pos.y < groundLimit)
-            // {
-            //     if (e->tag() == "player")
-            //     {
-            //         e->cTransform->velocity.y /= AIR_RESISTANCE;
-            //     }
-            //     else if (e->tag() == "enemy")
-            //     {
-            //         e->cTransform->velocity.y /= AIR_RESISTANCE; // Air resistance
-            //     }
-            //     else if (e->tag() == "bullet")
-            //     {
-            //         e->cTransform->velocity.y /= AIR_RESISTANCE; // Air resistance
-            //     }
-            //     else if (e->tag() == "arrow")
-            //     {
-            //         e->cTransform->velocity.y /= AIR_RESISTANCE; // Air resistance
-            //     }
-            // }
-
-
             // Handle X-axis deceleration
-            // sf::Vector2f dragForce(e->cTransform->velocity.x * (-dragCoefficient * m_bulletSpeed), e->cTransform->velocity.y * (-dragCoefficient * m_bulletSpeed));
             if (std::abs(e->cTransform->velocity.x) > 1.0f)
             {
                 if (e->cTransform->pos.y < groundLimit)
                 {
                     if (e->tag() == "player")
                     {
-                        e->cTransform->velocity.x *= AIR_RESISTANCE;
+                        //e->cTransform->velocity.x *= AIR_RESISTANCE;
                     }
                     else if (e->tag() == "enemy")
                     {
@@ -617,7 +476,11 @@ void Game::sApplyGravity()
                     {
                         e->cTransform->velocity.x *= AIR_RESISTANCE; // Air resistance
                     }
-                    else if (e->tag() == "arrow")
+                    else if (e->tag() == "arrow" && m_isSlowMotionApplied)
+                    {
+                        //e->cTransform->velocity.x *= AIR_RESISTANCE; // Air resistance
+                    }
+                    else if (e->tag() == "arrow" && !m_isSlowMotionApplied)
                     {
                         e->cTransform->velocity.x *= AIR_RESISTANCE; // Air resistance
                     }
@@ -747,6 +610,8 @@ void Game::sApplyGravity()
                     }
                 }
             }
+            // Update position based on velocity
+            e->cTransform->pos += ((e->cTransform->velocity * multiplier)/3);
 
             // Additional logic for arrows
             if (e->tag() == "arrow")
@@ -794,20 +659,36 @@ void Game::sRender()
             }
         }
     }
+
     m_window.display();
 }
 
 
 void Game::sMovement()
 {
-    
+    // i need help
     float elapsed = m_dashClock.getElapsedTime().asSeconds();
 
+    // if (m_isSlowMotionApplied)
+    // {
+    //     DASH_DURATION = DASH_DURATION * multiplier;
+    // }
+    // else
+    // {
+    //     DASH_DURATION = 0.25f;
+    // }
+    
     if (elapsed < DASH_DURATION)
     {
         // Calculate dash velocity using deltatime
+        
         float dashSpeed = (m_isDashingRight ? DASH_DISTANCE : -DASH_DISTANCE) / DASH_DURATION;
-        m_player->cTransform->velocity.x = dashSpeed;
+        if (m_isSlowMotionApplied)
+        {
+            dashSpeed *= multiplier; // Apply multiplier to dash speed
+        }
+        
+        m_player->cTransform->velocity.x = (dashSpeed * multiplier)/3;
         m_player->cShape->rectangle.setSize(sf::Vector2f(90.0f, 90.0f));
         m_player->cShape->rectangle.setOrigin(45.0f, 45.0f);
 
@@ -832,22 +713,39 @@ void Game::sMovement()
     // Regular player movement (only if not dashing)
     if (!m_isDashingLeft && !m_isDashingRight)
     {
-        if (m_player->cInput->up && !m_isJumping)
+        if (m_player->cInput->up && !m_isJumping && !m_isSlowMotionApplied)
         {
             if (m_player->cTransform->pos.y >= GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f)
             {
-                m_player->cTransform->velocity.y = -15;
+                m_player->cTransform->velocity.y = -10;
                 m_isJumping = true;
             }
         }
+        else if (m_player->cInput->up && !m_isJumping && m_isSlowMotionApplied)
+        {
+            if (m_player->cTransform->pos.y >= GROUND_LEVEL - m_player->cShape->rectangle.getSize().y / 2.0f)
+            {
+                m_player->cTransform->velocity.y = (-10 * multiplier)/3;
+                m_isJumping = true;
+            }
+        }
+        else
 
-        if (m_player->cInput->left)
+        if (m_player->cInput->left && !m_isSlowMotionApplied)
         {
             m_player->cTransform->velocity.x = -6;
         }
-        else if (m_player->cInput->right)
+        else if (m_player->cInput->left && m_isSlowMotionApplied)
+        {
+            m_player->cTransform->velocity.x = (-6 * multiplier)/3;
+        }
+        else if (m_player->cInput->right && !m_isSlowMotionApplied)
         {
             m_player->cTransform->velocity.x = 6;
+        }
+        else if (m_player->cInput->right && m_isSlowMotionApplied)
+        {
+            m_player->cTransform->velocity.x = (6 * multiplier)/3;
         }
         else
         {
@@ -855,12 +753,20 @@ void Game::sMovement()
         }
     }
 
-
+    // this was changed
     // Apply regular velocity updates
     if (!m_isDashingLeft && !m_isDashingRight)
     {
-        m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
-        m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
+        if (!m_isSlowMotionApplied)
+        {
+            m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
+            m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
+        }
+        else
+        {
+            m_player->cTransform->pos.x += (m_player->cTransform->velocity.x * m_deltatime * multiplier)/3;
+            m_player->cTransform->pos.y += (m_player->cTransform->velocity.y * m_deltatime * multiplier)/3;
+        }
     }
 
     // Bullet movement
@@ -983,8 +889,6 @@ void Game::sUserInput()
             {
                 m_mouseClock.restart();
                 m_isMousePressed = true;
-                
-                //std::cout << "Left Mouse Button Pressed\n";
             }
         }
 
@@ -997,39 +901,27 @@ void Game::sUserInput()
                 m_isMousePressed = false;
 
                 float chargedSpeed = 0;
-                if (elapsed.asSeconds() < 0.75)
+                if (elapsed.asSeconds() < 4.0)
                 {
-                    chargedSpeed = elapsed.asSeconds() * elapsed.asSeconds() * 6 + 17.0f;
+                    if (elapsed.asSeconds() < 0.5)
+                    {
+                        chargedSpeed = 15.0f;
+                    }
+                    else
+                    {
+                        chargedSpeed = elapsed.asSeconds() * elapsed.asSeconds() * 7 + 15.0f;
+                    }
                 }
                 else
                 {
-                    chargedSpeed = elapsed.asSeconds() * elapsed.asSeconds() * 18 + 17.0f;
+                    chargedSpeed = 127.0f;
                 }
-
                 m_bulletSpeed = chargedSpeed; // Set final bullet speed
-                //std::cout << "Left Mouse Button Released\n";
-                //std::cout << "Bullet Speed Charged: " << m_bulletSpeed << "\n";
 
                 spawnArrow(m_player, m_target);
-                m_bulletSpeed = 17.0f; // Reset speed after usage
+
+                m_bulletSpeed = 15.0f; 
             }
         }
-    }
-
-    // Real-time bullet speed update while mouse is pressed
-    if (m_isMousePressed)
-    {
-        sf::Time elapsed = m_mouseClock.getElapsedTime();
-        float chargingSpeed = 0;
-        if (elapsed.asSeconds() < 0.75)
-        {
-            chargingSpeed = elapsed.asSeconds() * elapsed.asSeconds() * 6 + 17.0f;
-        }
-        else
-        {
-            chargingSpeed = elapsed.asSeconds() * elapsed.asSeconds() * 18 + 17.0f;
-        }
-
-        //std::cout << "Charging Bullet Speed: " << chargingSpeed << " (Elapsed: " << elapsed.asSeconds() << " seconds)\n";
     }
 }
