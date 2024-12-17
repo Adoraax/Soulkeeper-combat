@@ -32,6 +32,9 @@ class Game
     bool                m_paused = false;   // whether we update game logic
     bool                m_running = true;   // whether the game is running
     bool                m_isSlowMotionApplied = false;
+    bool                m_isMelee = false;
+    bool                m_isRanged = false;
+    bool                m_isHolstered = false;
     float               m_deltatime;
     float               m_bulletSpeed = 15.0f;
     float               m_decayRate = 2.0f;
@@ -41,7 +44,6 @@ class Game
     // Physics
     float               groundLimit;
     float               GRAVITY = 20.0f;    
-    float               AIR_RESISTANCE = 0.995f;             // Air resistance factor
     float               GROUND_LEVEL;             // Ground level
     const float         BOUNCE_FACTOR = 0.4f;        // Energy loss during bounce
     const float         VELOCITY_THRESHOLD = 6.0f;  // Minimum velocity to stop bouncing
@@ -53,6 +55,7 @@ class Game
     bool                m_isMousePressed = false;
     bool                m_isJumping = false;
     bool                m_canDash = true;
+    bool                m_isSwordCharging = false;
     float         DASH_DISTANCE = 300.0f;    // Total distance covered in a dash
     float         DASH_DURATION = 0.5f;     // Time (in seconds) for a full dash
     const float         DOUBLE_TAP_THRESHOLD = 0.25f;
@@ -60,11 +63,13 @@ class Game
     sf::Clock           m_mouseClock;
     sf::Clock           m_dashClock; 
     sf::Clock           m_dashCooldownClock;
+    sf::Clock           m_swordChargeClock;
     std::map<sf::Keyboard::Key, sf::Clock> m_keyPressClocks; // Track the time of the last key press
     std::map<sf::Keyboard::Key, bool> m_keyClockStarted;
     std::unordered_map<sf::Keyboard::Key, bool> m_keyHeld;
     std::vector<sf::Vector2f> m_trajectory;
 
+sf::Vector2f m_armEndPos;
 
     std::shared_ptr<Entity> m_player;
 
@@ -85,10 +90,14 @@ class Game
     void spawnEnemy();
     void spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
     void spawnArrow(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
+    //void spawnSword(std::shared_ptr<Entity> entity, const Vec2 & mousePos);
+    void spawnSword();
     void spawnBoundary();
+    void spawnPlayerArm();
     
     void slowMotion();
     void chasePlayer();
+    void holsterWeapon();
 
 public:
     Vec2 getPlayerPosition() const;  // get player's position
