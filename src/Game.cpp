@@ -81,7 +81,54 @@ void Game::spawnPlayer()
     m_player = entity;
     m_isMelee = true;
     spawnPlayerArm();
+    spawnPlayerElbow();
+    spawnPlayerForearm();
     spawnSword();
+}
+
+void Game::spawnPlayerForearm()
+{
+    // Create a new entity for the arm
+    auto forearm = m_entities.addEntity("forearm");
+
+    // Set the sword's transform component (position, velocity, angle, speed)
+    forearm->cTransform = std::make_shared<CTransform>(
+        m_player->cTransform->pos,  // Start position: same as player's position
+        Vec2(0.0f, 0.0f),           // Initial velocity
+        0.0f,                       // Initial angle
+        0.0f                        // Initial speed
+    );
+
+    // Set the sword's shape component (rectangle with outline)
+    forearm->cShape = std::make_shared<CShape>(
+        sf::Vector2f(45.0f, 90.0f), // Sword size
+        sf::Color::Black,              // Fill color
+        sf::Color::Red,            // Outline color
+        1.0f                         // Outline thickness
+    );
+}
+
+void Game::spawnPlayerElbow()
+{
+    // Create a new entity for the elbow
+    auto elbow = m_entities.addEntity("elbow");
+
+    // Set the sword's transform component (position, velocity, angle, speed)
+    elbow->cTransform = std::make_shared<CTransform>(
+        m_player->cTransform->pos,  // Start position: same as player's position
+        Vec2(0.0f, 0.0f),           // Initial velocity
+        0.0f,                       // Initial angle
+        0.0f                        // Initial speed
+    );
+
+    // Set the sword's shape component (rectangle with outline)
+    elbow->cShape = std::make_shared<CShape>(
+        15.0f,
+        8,
+        sf::Color::Black,              // Fill color
+        sf::Color::Red,            // Outline color
+        1.0f                         // Outline thickness
+    );
 }
 
 void Game::spawnPlayerArm()
@@ -99,12 +146,11 @@ void Game::spawnPlayerArm()
 
     // Set the sword's shape component (rectangle with outline)
     arm->cShape = std::make_shared<CShape>(
-        sf::Vector2f(45.0f, 90.0f), // Sword size
+        sf::Vector2f(90.0f, 22.5f), // Sword size
         sf::Color::Black,              // Fill color
         sf::Color::Red,            // Outline color
         1.0f                         // Outline thickness
     );
-
 }
 
 // Spawn an enemy entity
@@ -810,42 +856,82 @@ void Game::sMovement()
 
     for (auto& arm : m_entities.getEntities("arm"))
     {
-        if (arm->cTransform)
+        for (auto& elbow : m_entities.getEntities("elbow"))
         {
-            // 1. Anchor the arm's base to the player's position
-            sf::Vector2f playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
+            if (arm->cTransform && elbow->cTransform)
+            {
+                // 1. Anchor the arm's base to the player's position
+                sf::Vector2f playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
 
-            // 2. Get mouse position relative to the window
-            sf::Vector2i mousePos = sf::Mouse::getPosition(m_window);
-            sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+                // 2. Calculate the direction and distance between the player and the elbow
+                sf::Vector2f direction(elbow->cTransform->pos.x - playerPos.x, elbow->cTransform->pos.y - playerPos.y); // Vector from player to elbow
+                float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y); // Distance between player and elbow
+                float angle = std::atan2(direction.y, direction.x) * 180.0f / M_PI; // Convert to degrees
 
-            // 3. Calculate the angle between the player and the mouse
-            sf::Vector2f direction = mousePosF - playerPos; // Vector from player to mouse
-            float angle = atan2(direction.y, direction.x) * 180.0f / M_PI; // Convert to degrees
+                // 3. Set the arm's position and rotation
+                arm->cTransform->pos = playerPos; // Base of the arm
+                arm->cShape->rectangle.setPosition(playerPos); // Set base position
+                arm->cShape->rectangle.setRotation(angle);     // Rotate to face elbow
 
-            // 4. Set the arm's position and rotation
-            arm->cTransform->pos = playerPos; // Base of the arm
-            arm->cShape->rectangle.setPosition(playerPos); // Set base position
-            arm->cShape->rectangle.setRotation(angle);     // Rotate to face mouse
+                // 4. Adjust the origin to the base (bottom-left of the arm)
+                arm->cShape->rectangle.setSize(sf::Vector2f(distance, 22.5f)); // Arm dimensions (length, thickness)
+                arm->cShape->rectangle.setOrigin(0.0f, 11.25f); // Origin at the base: bottom-left
 
-            // 5. Adjust the origin to the base (bottom-left of the arm)
-            arm->cShape->rectangle.setSize(sf::Vector2f(90.0f, 22.5f)); // Arm dimensions (length, thickness)
-            arm->cShape->rectangle.setOrigin(0.0f, 10.0f); // Origin at the base: bottom-left
+                sf::Vector2i mousePos = sf::Mouse::getPosition(m_window);
+                sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
 
-            // Note: SetOrigin(0.0f, center Y) ensures rotation occurs at the arm's base.
+                // 5. Update the elbow's position based on the arm's length
+                float armLength = 90.0f; // Length of the arm
+                elbow->cTransform->pos = playerPos + sf::Vector2f(std::cos(angle * M_PI / 180.0f) * armLength,
+                                                                std::sin(angle * M_PI / 180.0f) * armLength);
+
+                // Note: SetOrigin(0.0f, center Y) ensures rotation occurs at the arm's base.
+                elbow->cShape->circle.setPosition(sf::Vector2f(elbow->cTransform->pos.x, elbow->cTransform->pos.y));
+            }
+        }
+    }
+
+    for (auto& forearm : m_entities.getEntities("forearm"))
+    {
+        for (auto& elbow : m_entities.getEntities("elbow"))
+        {
+            if (forearm->cTransform)
+            {
+                // 1. Anchor the forearm's base to the elbow's position
+                sf::Vector2f elbowPos(elbow->cTransform->pos.x, elbow->cTransform->pos.y);
+
+                // 2. Get mouse position relative to the window
+                sf::Vector2i mousePos = sf::Mouse::getPosition(m_window);
+                sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+
+                // 3. Calculate the angle between the elbow and the mouse
+                sf::Vector2f direction = mousePosF - elbowPos; // Vector from elbow to mouse
+                float angle = atan2(direction.y, direction.x) * 180.0f / M_PI; // Convert to degrees
+
+                // 4. Set the forearm's position and rotation
+                forearm->cTransform->pos = elbowPos; // Base of the forearm
+                forearm->cShape->rectangle.setPosition(elbowPos); // Set base position
+                forearm->cShape->rectangle.setRotation(angle);     // Rotate to face mouse
+
+                // 5. Adjust the origin to the base (bottom-left of the forearm)
+                forearm->cShape->rectangle.setSize(sf::Vector2f(90.0f, 22.5f)); // Forearm dimensions (length, thickness)
+                forearm->cShape->rectangle.setOrigin(0.0f, 11.25f); // Origin at the base: bottom-left
+
+                // Note: SetOrigin(0.0f, center Y) ensures rotation occurs at the forearm's base.
+            }
         }
     }
 
     for (auto& sword : m_entities.getEntities("sword"))
     {
-        for (auto& arm : m_entities.getEntities("arm"))
+        for (auto& forearm : m_entities.getEntities("forearm"))
         {
-            if (sword->cTransform && arm->cTransform)
+            if (sword->cTransform && forearm->cTransform)
             {
                 // 1. Calculate the arm's tip position
-                sf::Vector2f armBasePos(arm->cTransform->pos.x, arm->cTransform->pos.y); // Base of the arm
+                sf::Vector2f armBasePos(forearm->cTransform->pos.x, forearm->cTransform->pos.y); // Base of the arm
                 float armLength = 90.0f; // Length of the arm
-                float armAngleRad = arm->cShape->rectangle.getRotation() * M_PI / 180.0f; // Convert angle to radians
+                float armAngleRad = forearm->cShape->rectangle.getRotation() * M_PI / 180.0f; // Convert angle to radians
 
                 // Tip position using trigonometry
                 sf::Vector2f armTipPos = armBasePos + sf::Vector2f(
@@ -898,60 +984,6 @@ void Game::sMovement()
         }
     }
 
-    // for (auto& sword : m_entities.getEntities("sword"))
-    // {
-    //     for (auto& arm : m_entities.getEntities("arm"))
-    //     {
-    //         if (sword->cTransform && arm->cTransform)
-    //         {
-    //             // 1. Calculate the arm's tip position
-    //             sf::Vector2f armBasePos(arm->cTransform->pos.x, arm->cTransform->pos.y); // Base of the arm
-    //             float armLength = 90.0f; // Length of the arm
-    //             float armAngleRad = arm->cShape->rectangle.getRotation() * M_PI / 180.0f; // Convert angle to radians
-
-    //             // Tip position using trigonometry
-    //             sf::Vector2f armTipPos = armBasePos + sf::Vector2f(
-    //                 armLength * std::cos(armAngleRad),
-    //                 armLength * std::sin(armAngleRad)
-    //             );
-
-    //             // 2. Tether the sword's hilt to the arm tip
-    //             sf::Vector2f hiltPos = armTipPos;
-    //             sword->cTransform->pos = hiltPos;
-
-    //             // 3. Update sword tip with gravity
-    //             sword->cTransform->velocity.y += 500.0f * m_deltatime;
-    //             sword->cTransform->pos += sword->cTransform->velocity * m_deltatime;
-
-    //             // Prevent tip from going below ground
-    //             if (sword->cTransform->pos.y > GROUND_LEVEL)
-    //             {
-    //                 sword->cTransform->pos.y = GROUND_LEVEL;
-    //                 sword->cTransform->velocity.y = 0;
-    //             }
-
-    //             // 4. Constrain sword length
-    //             sf::Vector2f direction(sword->cTransform->pos.x - hiltPos.x, sword->cTransform->pos.y - hiltPos.y);
-    //             float swordLength = 280.0f;
-    //             float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-
-    //             if (distance > swordLength)
-    //             {
-    //                 direction /= distance;
-    //                 sword->cTransform->pos = hiltPos + direction * swordLength;
-    //             }
-
-    //             // 5. Set sword rotation
-    //             direction = sf::Vector2f(sword->cTransform->pos.x - hiltPos.x, sword->cTransform->pos.y - hiltPos.y);
-    //             float angle = atan2(direction.y, direction.x) * 180.0f / M_PI;
-
-    //             sword->cShape->rectangle.setPosition(hiltPos);
-    //             sword->cShape->rectangle.setRotation(angle);
-    //             sword->cShape->rectangle.setSize(sf::Vector2f(swordLength, 10.0f));
-    //             sword->cShape->rectangle.setOrigin(0.0f, 5.0f); // Origin at the hilt
-    //         }
-    //     }
-    // }
 
 
     // Bullet movement
@@ -1129,24 +1161,24 @@ void Game::sUserInput()
                 }
                 else if (m_isMelee) // Melee logic (sword swing)
                 {
-                    float chargeTime = elapsed.asSeconds(); // Get swing charge time
-                    float swingForce = std::min(chargeTime * 500.0f, 2000.0f); // Calculate swing force
+                    // float chargeTime = elapsed.asSeconds(); // Get swing charge time
+                    // float swingForce = std::min(chargeTime * 500.0f, 2000.0f); // Calculate swing force
 
-                    // Get the direction vector from player to mouse (used for rotation and swinging direction)
-                    sf::Vector2f playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
-                    sf::Vector2i mousePos = sf::Mouse::getPosition(m_window);
-                    sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
-                    sf::Vector2f direction = mousePosF - playerPos;
-                    direction = direction / std::sqrt(direction.x * direction.x + direction.y * direction.y); // Normalize direction
+                    // // Get the direction vector from player to mouse (used for rotation and swinging direction)
+                    // sf::Vector2f playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
+                    // sf::Vector2i mousePos = sf::Mouse::getPosition(m_window);
+                    // sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+                    // sf::Vector2f direction = mousePosF - playerPos;
+                    // direction = direction / std::sqrt(direction.x * direction.x + direction.y * direction.y); // Normalize direction
 
-                    // Apply force to the sword after charging
-                    for (auto& sword : m_entities.getEntities("sword"))
-                    {
-                        if (sword->cTransform)
-                        {
-                            sword->cTransform->velocity = direction * swingForce; // Apply velocity in the direction of the mouse
-                        }
-                    }
+                    // // Apply force to the sword after charging
+                    // for (auto& sword : m_entities.getEntities("sword"))
+                    // {
+                    //     if (sword->cTransform)
+                    //     {
+                    //         sword->cTransform->velocity = direction * swingForce; // Apply velocity in the direction of the mouse
+                    //     }
+                    // }
                 }
             }
         }

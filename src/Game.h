@@ -69,7 +69,7 @@ class Game
     std::unordered_map<sf::Keyboard::Key, bool> m_keyHeld;
     std::vector<sf::Vector2f> m_trajectory;
 
-sf::Vector2f m_armEndPos;
+
 
     std::shared_ptr<Entity> m_player;
 
@@ -94,6 +94,9 @@ sf::Vector2f m_armEndPos;
     void spawnSword();
     void spawnBoundary();
     void spawnPlayerArm();
+    void spawnPlayerElbow();
+    void spawnPlayerForearm();
+    
     
     void slowMotion();
     void chasePlayer();
