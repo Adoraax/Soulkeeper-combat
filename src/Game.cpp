@@ -38,7 +38,7 @@ void Game::run()
         multiplier = m_deltatime * visual_frame_rate;
         m_entities.update();
         //sEnemySpawner();
-        sApplyGravity();
+        //sApplyGravity();
         sCollision();
         sUserInput();
         slowMotion();
@@ -83,7 +83,7 @@ void Game::spawnPlayer()
     spawnPlayerArm();
     spawnPlayerElbow();
     spawnPlayerForearm();
-    spawnSword();
+    //spawnSword();
 }
 
 void Game::spawnPlayerForearm()
@@ -879,6 +879,9 @@ void Game::sMovement()
 
                 sf::Vector2i mousePos = sf::Mouse::getPosition(m_window);
                 sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+                sf::Vector2f elbowPos(elbow->cTransform->pos.x, elbow->cTransform->pos.y);
+                sf::Vector2f directionME(mousePos.x - elbowPos.x, mousePos.x - elbowPos.x);
+                float distanceME = std::sqrt(direction.x * direction.x + direction.y * direction.y);
 
                 // 5. Update the elbow's position based on the arm's length
                 float armLength = 90.0f; // Length of the arm
@@ -887,6 +890,11 @@ void Game::sMovement()
 
                 // Note: SetOrigin(0.0f, center Y) ensures rotation occurs at the arm's base.
                 elbow->cShape->circle.setPosition(sf::Vector2f(elbow->cTransform->pos.x, elbow->cTransform->pos.y));
+                //elbow->cTransform->velocity.x = 5;
+
+                // x and y velocity should be in direction of the cursor
+
+                elbow->cTransform->velocity = directionME;
             }
         }
     }
@@ -942,13 +950,14 @@ void Game::sMovement()
                 sf::Vector2f hiltPos(armTipPos);
 
                 // Update the sword tip's position
-                if (!m_isSlowMotionApplied)
-                {
-                    sword->cTransform->pos += sword->cTransform->velocity * m_deltatime;
-                }
-                else if (m_isSlowMotionApplied)
-                {
-                }
+                // if (!m_isSlowMotionApplied)
+                // {
+                //     sword->cTransform->pos += sword->cTransform->velocity * m_deltatime;
+                // }
+                // else if (m_isSlowMotionApplied)
+                // {
+                //     sword->cTransform->pos += sword->cTransform->velocity;
+                // }
                 
 
                 // Prevent the tip of the sword from going below ground level
