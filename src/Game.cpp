@@ -38,7 +38,7 @@ void Game::run()
         multiplier = m_deltatime * visual_frame_rate;
         m_entities.update();
         //sEnemySpawner();
-        //sApplyGravity();
+        sApplyGravity();
         sCollision();
         sUserInput();
         slowMotion();
@@ -47,7 +47,7 @@ void Game::run()
         //sLifespan();
         chasePlayer();
         //sBoundarySpawner();
-        m_currentFrame++;
+        m_currentFrame++; 
     }
 }
 
@@ -630,7 +630,7 @@ void Game::sApplyGravity()
                 }
             }
 
-            groundLimit = GROUND_LEVEL;
+            groundLimit = GROUND_LEVEL - 400.0f;
             if (e->tag() == "player")
             {
                 groundLimit -= e->cShape->rectangle.getSize().y / 2.0f;
@@ -858,44 +858,57 @@ void Game::sMovement()
     {
         for (auto& elbow : m_entities.getEntities("elbow"))
         {
-            if (arm->cTransform && elbow->cTransform)
-            {
-                // 1. Anchor the arm's base to the player's position
-                sf::Vector2f playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
+            // 1. Anchor the arm's base to the player's position
+            sf::Vector2f playerPos(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
 
-                // 2. Calculate the direction and distance between the player and the elbow
-                sf::Vector2f direction(elbow->cTransform->pos.x - playerPos.x, elbow->cTransform->pos.y - playerPos.y); // Vector from player to elbow
-                float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y); // Distance between player and elbow
-                float angle = std::atan2(direction.y, direction.x) * 180.0f / M_PI; // Convert to degrees
+            // 2. Calculate the direction and distance between the player and the elbow
+            sf::Vector2f direction(elbow->cTransform->pos.x - playerPos.x, elbow->cTransform->pos.y - playerPos.y); // Vector from player to elbow
+            float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y); // Distance between player and elbow
+            float angle = std::atan2(direction.y, direction.x) * 180.0f / M_PI; // Convert to degrees
 
-                // 3. Set the arm's position and rotation
-                arm->cTransform->pos = playerPos; // Base of the arm
-                arm->cShape->rectangle.setPosition(playerPos); // Set base position
-                arm->cShape->rectangle.setRotation(angle);     // Rotate to face elbow
+            // 3. Set the arm's position and rotation
+            arm->cTransform->pos = playerPos; // Base of the arm
+            arm->cShape->rectangle.setPosition(playerPos); // Set base position
+            arm->cShape->rectangle.setRotation(angle);     // Rotate to face elbow
 
-                // 4. Adjust the origin to the base (bottom-left of the arm)
-                arm->cShape->rectangle.setSize(sf::Vector2f(distance, 22.5f)); // Arm dimensions (length, thickness)
-                arm->cShape->rectangle.setOrigin(0.0f, 11.25f); // Origin at the base: bottom-left
+            // 4. Adjust the origin to the base (bottom-left of the arm)
+            arm->cShape->rectangle.setSize(sf::Vector2f(90.0f, 22.5f)); // Arm dimensions (length, thickness)
+            arm->cShape->rectangle.setOrigin(0.0f, 11.25f); // Origin at the base: bottom-left
 
-                sf::Vector2i mousePos = sf::Mouse::getPosition(m_window);
-                sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
-                sf::Vector2f elbowPos(elbow->cTransform->pos.x, elbow->cTransform->pos.y);
-                sf::Vector2f directionME(mousePos.x - elbowPos.x, mousePos.x - elbowPos.x);
-                float distanceME = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+            sf::Vector2i mousePos = sf::Mouse::getPosition(m_window);
+            sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+            sf::Vector2f elbowPos(elbow->cTransform->pos.x, elbow->cTransform->pos.y);
+            sf::Vector2f directionToMouse = mousePosF - elbowPos;
+            float distanceToMouse = std::sqrt(directionToMouse.x * directionToMouse.x + directionToMouse.y * directionToMouse.y);
+            //normalize the direction
+            directionToMouse /= distanceToMouse;
+            float moveSpeed = 15.0f;
+            elbow->cTransform->pos += directionToMouse * moveSpeed;
 
-                // 5. Update the elbow's position based on the arm's length
-                float armLength = 90.0f; // Length of the arm
-                elbow->cTransform->pos = playerPos + sf::Vector2f(std::cos(angle * M_PI / 180.0f) * armLength,
-                                                                std::sin(angle * M_PI / 180.0f) * armLength);
+            // 5. Update the elbow's position based on the arm's length
+            float armLength = 90.0f;
+            sf::Vector2f newDirection = elbowPos - playerPos;
+            float newDistance = std::sqrt(newDirection.x * newDirection.x + newDirection.y * newDirection.y);
 
-                // Note: SetOrigin(0.0f, center Y) ensures rotation occurs at the arm's base.
-                elbow->cShape->circle.setPosition(sf::Vector2f(elbow->cTransform->pos.x, elbow->cTransform->pos.y));
-                //elbow->cTransform->velocity.x = 5;
+            // attempt 1
+            // sf::Vector2f directionME(mousePos.x - elbowPos.x, mousePos.x - elbowPos.x);
+            // float distanceME = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+            // elbow->cTransform->pos = playerPos + sf::Vector2f(std::cos(angle * M_PI / 180.0f) * armLength,
+            //                                                 std::sin(angle * M_PI / 180.0f) * armLength); 
 
-                // x and y velocity should be in direction of the cursor
+            // elbow->cShape->circle.setPosition(sf::Vector2f(elbow->cTransform->pos.x, elbow->cTransform->pos.y));
+            // elbow->cTransform->velocity.x = directionME.x / distanceME * 5;
+            // elbow->cTransform->velocity.y = directionME.y / distanceME * 5;
 
-                elbow->cTransform->velocity = directionME;
-            }
+
+            // attempt 2
+            // if (newDistance > armLength)
+            // {
+            //     newDirection /= newDistance; // Normalize the direction vector
+            //     elbow->cTransform->pos = playerPos + newDirection * armLength;
+            // }
+            
+            elbow->cShape->circle.setPosition(sf::Vector2f(elbow->cTransform->pos.x, elbow->cTransform->pos.y));
         }
     }
 
